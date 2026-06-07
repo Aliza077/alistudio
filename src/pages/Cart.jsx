@@ -1,21 +1,128 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { 
   Trash2, ShoppingBag, ArrowLeft, Plus, Minus, 
-  MapPin, Tag, ShieldCheck 
+  MapPin, ShieldCheck, Navigation, Search, ExternalLink
 } from 'lucide-react';
+
+const LOCATION_STORAGE_KEY = 'ali_shipping_location';
+
+const DEFAULT_LOCATION = {
+  address: 'Block 15, Gulshan-e-Iqbal, Karachi',
+  lat: 24.9236,
+  lng: 67.0889,
+};
+
+async function reverseGeocode(lat, lng) {
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+  );
+  if (!res.ok) throw new Error('Could not resolve address');
+  const data = await res.json();
+  return data.display_name;
+}
+
+async function searchAddress(query) {
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`
+  );
+  if (!res.ok) throw new Error('Search failed');
+  const data = await res.json();
+  if (!data[0]) return null;
+  return {
+    address: data[0].display_name,
+    lat: parseFloat(data[0].lat),
+    lng: parseFloat(data[0].lon),
+  };
+}
+
+function getGoogleMapsEmbedUrl(lat, lng) {
+  return `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
+}
+
+function getGoogleMapsLink(lat, lng, address) {
+  const query = address ? encodeURIComponent(address) : `${lat},${lng}`;
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
+}
 
 export default function Cart() {
   const { cart, updateCartQuantity, removeFromCart, clearCart } = useAuth();
-  const navigate = useNavigate();
-  const { theme } = useTheme();
 
   const [promoCode, setPromoCode] = useState('');
   const [discount, setDiscount] = useState(0);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [trackingId, setTrackingId] = useState('');
+  const [location, setLocation] = useState(DEFAULT_LOCATION);
+  const [locationQuery, setLocationQuery] = useState('');
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState('');
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LOCATION_STORAGE_KEY);
+      if (saved) setLocation(JSON.parse(saved));
+    } catch {
+      /* ignore invalid saved location */
+    }
+  }, []);
+
+  const saveLocation = (nextLocation) => {
+    setLocation(nextLocation);
+    localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(nextLocation));
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported on this device.');
+      return;
+    }
+
+    setLocationLoading(true);
+    setLocationError('');
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const address = await reverseGeocode(latitude, longitude);
+          saveLocation({ address, lat: latitude, lng: longitude });
+        } catch {
+          setLocationError('Could not fetch address for your current location.');
+        } finally {
+          setLocationLoading(false);
+        }
+      },
+      () => {
+        setLocationError('Location permission denied. Search manually or allow location access.');
+        setLocationLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  };
+
+  const handleSearchLocation = async (e) => {
+    e.preventDefault();
+    const query = locationQuery.trim();
+    if (!query) return;
+
+    setLocationLoading(true);
+    setLocationError('');
+
+    try {
+      const result = await searchAddress(query);
+      if (!result) {
+        setLocationError('No location found. Try a different address.');
+        return;
+      }
+      saveLocation(result);
+      setLocationQuery('');
+    } catch {
+      setLocationError('Could not search location. Please try again.');
+    } finally {
+      setLocationLoading(false);
+    }
+  };
 
   const handleApplyPromo = (e) => {
     e.preventDefault();
@@ -163,14 +270,62 @@ export default function Cart() {
           {/* RIGHT COLUMN: Order Summary Card */}
           <div className="cart-summary-col glass">
             {/* Delivery address location */}
-            <div className="summary-section">
+            <div className="summary-section cart-location-section">
               <h4 className="summary-section-title">Shipping Location</h4>
+
+              <form onSubmit={handleSearchLocation} className="cart-location-search-row">
+                <input
+                  type="text"
+                  className="cart-location-input"
+                  placeholder="Search address on map..."
+                  value={locationQuery}
+                  onChange={(e) => setLocationQuery(e.target.value)}
+                />
+                <button type="submit" className="cart-location-btn primary" disabled={locationLoading}>
+                  <Search size={14} />
+                </button>
+              </form>
+
+              <button
+                type="button"
+                className="cart-location-btn"
+                onClick={handleUseCurrentLocation}
+                disabled={locationLoading}
+              >
+                <Navigation size={14} />
+                {locationLoading ? 'Locating...' : 'Use My Current Location'}
+              </button>
+
+              {locationError && (
+                <p className="cart-location-status error">{locationError}</p>
+              )}
+
               <div className="summary-address-row">
-                <MapPin size={18} style={{ color: 'var(--accent-gold)' }} />
-                <div style={{ flexGrow: 1 }}>
-                  <p className="summary-address-text">Block 15, Gulshan-e-Iqbal, Karachi</p>
+                <MapPin size={18} style={{ color: 'var(--accent-gold)', flexShrink: 0 }} />
+                <div style={{ flexGrow: 1, minWidth: 0 }}>
+                  <p className="summary-address-text">{location.address}</p>
                 </div>
               </div>
+
+              <div className="cart-location-map-wrap">
+                <iframe
+                  title="Shipping location map"
+                  src={getGoogleMapsEmbedUrl(location.lat, location.lng)}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
+                />
+              </div>
+
+              <a
+                href={getGoogleMapsLink(location.lat, location.lng, location.address)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cart-location-open-link"
+              >
+                <ExternalLink size={14} />
+                Open in Google Maps
+              </a>
             </div>
 
             <div className="divider-line-sub" />

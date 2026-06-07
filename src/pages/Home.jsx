@@ -265,13 +265,14 @@ export default function Home() {
 
         {/* Action Controls: Favourites, Cart, Sign In/Register or User welcome menu state */}
         <div className="header-actions">
-          {/* Cart Icon Button */}
-          <Link to="/cart" className="icon-btn-mode cart-icon-link" style={{ position: 'relative' }}>
-            <ShoppingCart size={18} />
-            {cart.length > 0 && (
-              <span className="cart-badge-count">{cart.reduce((acc, item) => acc + item.quantity, 0)}</span>
-            )}
-          </Link>
+          {user && (
+            <Link to="/cart" className="icon-btn-mode cart-icon-link" style={{ position: 'relative' }}>
+              <ShoppingCart size={18} />
+              {cart.length > 0 && (
+                <span className="cart-badge-count">{cart.reduce((acc, item) => acc + item.quantity, 0)}</span>
+              )}
+            </Link>
+          )}
 
           <button onClick={toggleTheme} className="icon-btn-mode">
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -414,17 +415,6 @@ export default function Home() {
           animate="visible"
           className="hero-text-block"
         >
-          {/* Tagline */}
-          <motion.div 
-            variants={itemVariants}
-            className="tagline"
-          >
-            <span className="tagline-dot" />
-            <span className="tagline-text">
-              47 Projects Completed
-            </span>
-          </motion.div>
-
           {/* Heading */}
           <motion.h2 
             variants={itemVariants}

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { User, Mail, Lock, ChevronDown, Check } from 'lucide-react';
 
 export default function Register() {
-  const { register } = useAuth();
+  const { register, emailExists } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -12,10 +12,10 @@ export default function Register() {
     username: '',
     email: '',
     gender: 'Male',
-    role: 'User', // User or Admin
+    role: 'User',
     password: '',
     confirmPassword: '',
-    avatar: null
+    avatar: null,
   });
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [error, setError] = useState('');
@@ -45,33 +45,37 @@ export default function Register() {
       return;
     }
 
-    // Attempt mock registration
-    register(formData);
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
 
-    // Redirect logic: User goes to Home (/), Admin goes to Dashboard (or can see Dashboard)
-    if (formData.role === 'Admin') {
-      navigate('/dashboard');
-    } else {
-      navigate('/');
+    if (emailExists(formData.email)) {
+      setError('An account with this email already exists');
+      return;
+    }
+
+    const result = register(formData);
+    if (result.success) {
+      navigate('/login', { state: { email: formData.email, registered: true } });
     }
   };
 
   return (
     <div className="register-page-container">
       <div className="register-card-box glass">
-        {/* Left Side: Catalog Image */}
         <div className="register-left-img-panel">
           <img src="/register_side.png" alt="Furniture Catalog" className="register-catalog-img" />
           <div className="register-img-overlay">
-            <h3 className="catalog-collection-tag font-serif">#Collection {new Date().getFullYear()}</h3>
+            <h3 className="catalog-collection-tag font-serif">
+              #Collection {new Date().getFullYear()}
+            </h3>
           </div>
         </div>
 
-        {/* Right Side: Form */}
         <div className="register-right-form-panel">
           <h2 className="register-form-title font-serif">Registration Form</h2>
 
-          {/* Profile Picture Upload Field */}
           <div className="avatar-upload-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
             <div className="avatar-preview-circle" style={{ width: '70px', height: '70px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: 'rgba(0,0,0,0.3)', position: 'relative' }}>
               {avatarPreview ? (
@@ -82,71 +86,33 @@ export default function Register() {
             </div>
             <label className="btn-outline" style={{ padding: '6px 12px', fontSize: '11px', cursor: 'pointer', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', display: 'inline-block' }}>
               Upload Picture
-              <input 
-                type="file" 
-                accept="image/*" 
-                onChange={handleAvatarChange} 
-                style={{ display: 'none' }} 
-              />
+              <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
             </label>
           </div>
-          
+
           {error && <div className="form-error-msg">{error}</div>}
 
           <form onSubmit={handleSubmit} className="register-form-el">
-            {/* First & Last Name row */}
             <div className="form-input-row">
               <div className="form-underlined-group half-width">
-                <input 
-                  type="text" 
-                  name="firstName" 
-                  placeholder="First Name" 
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  required 
-                />
+                <input type="text" name="firstName" placeholder="First Name" value={formData.firstName} onChange={handleChange} required />
               </div>
               <div className="form-underlined-group half-width">
-                <input 
-                  type="text" 
-                  name="lastName" 
-                  placeholder="Last Name" 
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  required 
-                />
+                <input type="text" name="lastName" placeholder="Last Name" value={formData.lastName} onChange={handleChange} required />
               </div>
             </div>
 
-            {/* Username field */}
             <div className="form-underlined-group">
-              <input 
-                type="text" 
-                name="username" 
-                placeholder="Username" 
-                value={formData.username}
-                onChange={handleChange}
-                required 
-              />
+              <input type="text" name="username" placeholder="Username" value={formData.username} onChange={handleChange} required />
               <User size={14} className="input-icon-right" />
             </div>
 
-            {/* Email Address field */}
             <div className="form-underlined-group">
-              <input 
-                type="email" 
-                name="email" 
-                placeholder="Email Address" 
-                value={formData.email}
-                onChange={handleChange}
-                required 
-              />
+              <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required />
               <Mail size={14} className="input-icon-right" />
             </div>
 
-            {/* Selector Row: Gender & Role */}
             <div className="form-input-row">
-              {/* Gender selector */}
               <div className="form-underlined-group half-width select-wrapper">
                 <select name="gender" value={formData.gender} onChange={handleChange}>
                   <option value="Male">Male</option>
@@ -155,8 +121,6 @@ export default function Register() {
                 </select>
                 <ChevronDown size={14} className="input-icon-right pointer-events-none" />
               </div>
-
-              {/* Role selector (User/Admin) */}
               <div className="form-underlined-group half-width select-wrapper">
                 <select name="role" value={formData.role} onChange={handleChange}>
                   <option value="User">User Role</option>
@@ -166,39 +130,21 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Password field */}
             <div className="form-underlined-group">
-              <input 
-                type="password" 
-                name="password" 
-                placeholder="Password" 
-                value={formData.password}
-                onChange={handleChange}
-                required 
-              />
+              <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} required />
               <Lock size={14} className="input-icon-right" />
             </div>
 
-            {/* Confirm Password field */}
             <div className="form-underlined-group">
-              <input 
-                type="password" 
-                name="confirmPassword" 
-                placeholder="Confirm Password" 
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required 
-              />
+              <input type="password" name="confirmPassword" placeholder="Confirm Password" value={formData.confirmPassword} onChange={handleChange} required />
               <Lock size={14} className="input-icon-right" />
             </div>
 
-            {/* Submit & Redirect Footer */}
             <div className="register-form-footer">
               <button type="submit" className="btn-gold register-submit-btn">
                 Register
                 <Check size={14} />
               </button>
-              
               <p className="login-redirect-text">
                 Already registered? <Link to="/login" className="login-redirect-link">Sign In</Link>
               </p>

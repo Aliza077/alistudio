@@ -9,7 +9,6 @@ export function AuthProvider({ children }) {
     if (users) {
       return JSON.parse(users);
     }
-    // Seed default admin account
     const defaultAdmin = {
       firstName: 'Admin',
       lastName: 'Ali',
@@ -18,7 +17,8 @@ export function AuthProvider({ children }) {
       gender: 'Male',
       role: 'Admin',
       password: 'admin',
-      avatar: null
+      avatar: null,
+      emailVerified: true,
     };
     localStorage.setItem('ali_users', JSON.stringify([defaultAdmin]));
     return [defaultAdmin];
@@ -29,7 +29,11 @@ export function AuthProvider({ children }) {
     return savedCart ? JSON.parse(savedCart) : [];
   });
 
-  // Load active session on mount
+  const [feedbackList, setFeedbackList] = useState(() => {
+    const saved = localStorage.getItem('ali_feedback');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   useEffect(() => {
     const session = localStorage.getItem('ali_session');
     if (session) {
@@ -37,20 +41,31 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const emailExists = (email) => {
+    return registeredUsers.some(
+      (u) => u.email.toLowerCase() === email.toLowerCase()
+    );
+  };
+
   const register = (userData) => {
-    const updatedUsers = [...registeredUsers, userData];
+    const { confirmPassword, ...cleanData } = userData;
+    const normalizedUser = {
+      ...cleanData,
+      email: cleanData.email.toLowerCase(),
+      emailVerified: true,
+    };
+
+    const updatedUsers = [...registeredUsers, normalizedUser];
     setRegisteredUsers(updatedUsers);
     localStorage.setItem('ali_users', JSON.stringify(updatedUsers));
-    
-    // Auto-login registered user
-    setUser(userData);
-    localStorage.setItem('ali_session', JSON.stringify(userData));
-    return true;
+    return { success: true };
   };
 
   const login = (email, password) => {
     const foundUser = registeredUsers.find(
-      (u) => u.email === email && u.password === password
+      (u) =>
+        u.email.toLowerCase() === email.toLowerCase() &&
+        u.password === password
     );
     if (foundUser) {
       setUser(foundUser);
@@ -66,15 +81,16 @@ export function AuthProvider({ children }) {
   };
 
   const resetPassword = (email, newPassword) => {
-    const userIndex = registeredUsers.findIndex((u) => u.email === email);
+    const userIndex = registeredUsers.findIndex(
+      (u) => u.email.toLowerCase() === email.toLowerCase()
+    );
     if (userIndex > -1) {
       const updatedUsers = [...registeredUsers];
       updatedUsers[userIndex].password = newPassword;
       setRegisteredUsers(updatedUsers);
       localStorage.setItem('ali_users', JSON.stringify(updatedUsers));
-      
-      // If the currently logged-in user is resetting their password, update their session
-      if (user && user.email === email) {
+
+      if (user && user.email.toLowerCase() === email.toLowerCase()) {
         const updatedSession = { ...user, password: newPassword };
         setUser(updatedSession);
         localStorage.setItem('ali_session', JSON.stringify(updatedSession));
@@ -90,12 +106,10 @@ export function AuthProvider({ children }) {
   };
 
   const addToCart = (product, quantity = 1, selectedColor = '', selectedSize = '') => {
-    // Generate a unique cart item ID based on product ID, color, and size
     const cartItemId = `${product.id}-${selectedColor.replace(/\s+/g, '')}-${selectedSize}`;
-    
     const existingIndex = cart.findIndex((item) => item.cartItemId === cartItemId);
     let updatedCart = [...cart];
-    
+
     if (existingIndex > -1) {
       updatedCart[existingIndex].quantity += quantity;
     } else {
@@ -107,7 +121,7 @@ export function AuthProvider({ children }) {
         image: product.image,
         quantity,
         selectedColor,
-        selectedSize
+        selectedSize,
       });
     }
     saveCartToStorage(updatedCart);
@@ -123,7 +137,7 @@ export function AuthProvider({ children }) {
       removeFromCart(cartItemId);
       return;
     }
-    const updatedCart = cart.map((item) => 
+    const updatedCart = cart.map((item) =>
       item.cartItemId === cartItemId ? { ...item, quantity: newQty } : item
     );
     saveCartToStorage(updatedCart);
@@ -133,20 +147,47 @@ export function AuthProvider({ children }) {
     saveCartToStorage([]);
   };
 
+  const submitFeedback = (message, type = 'suggestion', guestInfo = {}) => {
+    const entry = {
+      id: Date.now(),
+      message,
+      type,
+      username: guestInfo.username || user?.username || 'Guest',
+      email: guestInfo.email || user?.email || 'anonymous@guest.com',
+      date: new Date().toISOString(),
+    };
+    const updated = [entry, ...feedbackList];
+    setFeedbackList(updated);
+    localStorage.setItem('ali_feedback', JSON.stringify(updated));
+    return entry;
+  };
+
+  const deleteFeedback = (id) => {
+    const updated = feedbackList.filter((f) => f.id !== id);
+    setFeedbackList(updated);
+    localStorage.setItem('ali_feedback', JSON.stringify(updated));
+  };
+
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      registeredUsers, 
-      register, 
-      login, 
-      logout,
-      resetPassword,
-      cart,
-      addToCart,
-      removeFromCart,
-      updateCartQuantity,
-      clearCart
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        registeredUsers,
+        register,
+        login,
+        logout,
+        resetPassword,
+        emailExists,
+        cart,
+        addToCart,
+        removeFromCart,
+        updateCartQuantity,
+        clearCart,
+        feedbackList,
+        submitFeedback,
+        deleteFeedback,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

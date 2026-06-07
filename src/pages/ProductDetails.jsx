@@ -6,7 +6,7 @@ import {
   Star, Heart, Share2, MapPin, Truck, ShieldCheck, 
   RotateCcw, ShieldAlert, ArrowLeft, ShoppingCart, Minus, Plus 
 } from 'lucide-react';
-import { furnitureProducts } from './Home';
+import { furnitureProducts } from '../data/furnitureData';
 
 export default function ProductDetails() {
   const { id } = useParams();

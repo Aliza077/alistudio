@@ -3,10 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowRight, Moon, Sun, Heart, Share2, LogOut, Rss, Globe, Award, Send,
-  ShoppingCart, Search, Menu, X
+  ShoppingCart, Search, Menu, X, StickyNote
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { furnitureProducts, footerCategories } from '../data/furnitureData';
+import { studioNavPages } from '../data/studioNav';
+
+const navPages = studioNavPages;
 
 const slides = [
   {
@@ -26,6 +30,12 @@ const slides = [
   }
 ];
 
+const dealSlides = [
+  'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&auto=format&fit=crop&q=80',
+];
+
 // Pic 3 Categories icon models
 const visualCategories = [
   { name: 'Popular Categories', label: 'All Designs', image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200&auto=format&fit=crop&q=80' },
@@ -35,144 +45,48 @@ const visualCategories = [
   { name: 'Chairs', label: 'Chairs', image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=200&auto=format&fit=crop&q=80' }
 ];
 
-const filters = ['Popular Categories', 'Sofas', 'Bed', 'Dressing Table', 'Chairs'];
-
-// Mock catalog furniture products with descriptions and high-resolution images
-export const furnitureProducts = [
-  {
-    id: 1,
-    title: 'Oatmeal Accent Lounge Chair',
-    category: 'Chairs',
-    price: '$640',
-    description: 'A cozy accent chair with soft premium oatmeal upholstery and solid oak legs.',
-    image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=800&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 2,
-    title: 'Oakwood Dressing Cabinet',
-    category: 'Dressing Table',
-    price: '$1,250',
-    description: 'Minimalist solid oak dressing table and cabinet with soft-close drawers and clean lines.',
-    image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=800&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 3,
-    title: 'Classic Wooden Dining Chair',
-    category: 'Chairs',
-    price: '$180',
-    description: 'Solid wood dining chair with comfortable seat padding and minimalist backrest.',
-    image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=800&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 4,
-    title: 'Emerald Velvet Occasional Sofa',
-    category: 'Sofas',
-    price: '$2,100',
-    description: 'Luxurious emerald velvet sofa with sleek golden legs and high-density foam cushions.',
-    image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 5,
-    title: 'Walnut Dressing Table & Mirror',
-    category: 'Dressing Table',
-    price: '$890',
-    description: 'Premium dark walnut dressing vanity with a large circular mirror and multiple jewelry organizers.',
-    image: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=800&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 6,
-    title: 'Luxury King Master Bed Set',
-    category: 'Bed',
-    price: '$3,400',
-    description: 'King size bed set with high-grade tufted headboard, matching side tables, and organic sheets.',
-    image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 7,
-    title: 'Elegant Dressing Table Stool',
-    category: 'Dressing Table',
-    price: '$95',
-    description: 'Round cushioned dressing stool with sleek gold legs and premium velvet cover.',
-    image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 8,
-    title: 'Luxury Tufted Lounger Sofa',
-    category: 'Sofas',
-    price: '$910',
-    description: 'App-controlled smart reclining sofa with adjustable headrest and integrated USB ports.',
-    image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 9,
-    title: 'Nordic Wooden Bed Frame',
-    category: 'Bed',
-    price: '$1,150',
-    description: 'Nordic solid ash wood queen bed frame with integrated bedside panels.',
-    image: 'https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?w=800&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 10,
-    title: 'Ergonomic Mesh Office Chair',
-    category: 'Chairs',
-    price: '$420',
-    description: 'Fully adjustable mesh chair with adaptive lumbar support, 3D armrests, and synchro-tilt mechanism.',
-    image: 'https://images.unsplash.com/photo-1580481072645-022f9a6dbf27?w=800&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 11,
-    title: 'Teakwood Outdoor Sofa Set',
-    category: 'Sofas',
-    price: '$1,850',
-    description: 'Weather-resistant teakwood outdoor sofa set with quick-dry cushions covered in Sunbrella fabric.',
-    image: 'https://images.unsplash.com/photo-1599423300746-b62533397364?w=800&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 12,
-    title: 'Classic White Dressing Console',
-    category: 'Dressing Table',
-    price: '$850',
-    description: 'Dressing table console with three drawers and matching circular vanity mirror.',
-    image: 'https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=800&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 13,
-    title: 'Comfortable Single Guest Bed',
-    category: 'Bed',
-    price: '$580',
-    description: 'Compact guest bed frame with high-quality pine headboard and steel support structure.',
-    image: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=800&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 14,
-    title: 'Premium Ergonomic Desk Chair',
-    category: 'Chairs',
-    price: '$320',
-    description: 'Fully adjustable high-back ergonomic desk chair with lumbar support.',
-    image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80'
-  }
-];
+const filters = ['Popular Categories', 'Sofas', 'Bed', 'Dressing Table', 'Chairs', 'Tables', 'Wardrobes', 'Lighting', 'Decor'];
 
 export default function Home() {
-  const { user, logout, cart, addToCart } = useAuth();
+  const { user, logout, cart, addToCart, submitFeedback } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [dealSlide, setDealSlide] = useState(0);
   const [activeFilter, setActiveFilter] = useState('Popular Categories');
   const [favorites, setFavorites] = useState([]);
   const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackType, setFeedbackType] = useState('suggestion');
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
   
-  // Search & Mobile menu toggle states
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNavPagesOpen, setIsNavPagesOpen] = useState(false);
 
-  // Auto slide effect
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 6000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDealSlide((prev) => (prev + 1) % dealSlides.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.nav-pages-wrapper')) {
+        setIsNavPagesOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   const toggleFavorite = (e, productId) => {
@@ -193,8 +107,11 @@ export default function Home() {
 
   const handleFeedbackSubmit = (e) => {
     e.preventDefault();
-    alert('Thank you! Your suggestion/report has been securely transmitted.');
+    if (!feedbackText.trim()) return;
+    submitFeedback(feedbackText.trim(), feedbackType);
     setFeedbackText('');
+    setFeedbackSuccess(true);
+    setTimeout(() => setFeedbackSuccess(false), 3000);
   };
 
   const displayFilters = user ? [...filters, 'My Favourites'] : filters;
@@ -235,14 +152,15 @@ export default function Home() {
       {/* Background Carousel */}
       <div className="carousel-bg">
         <AnimatePresence mode="wait">
-          <motion.div
+          <motion.img
             key={currentSlide}
+            src={slides[currentSlide].image}
+            alt={slides[currentSlide].title}
             initial={{ opacity: 0, scale: 1.05 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 1.5, ease: 'easeInOut' }}
             className="carousel-slide-img"
-            style={{ backgroundImage: `url(${slides[currentSlide].image})` }}
           />
         </AnimatePresence>
         <div className="carousel-overlay" />
@@ -255,26 +173,95 @@ export default function Home() {
             className="logo-img-wrapper"
             whileHover={{ rotate: 15, scale: 1.05 }}
           >
-            <img src="/logo.png" alt="Ali Logo" className="logo-img" />
+            <img src="/logo.svg" alt="Ali Logo" className="logo-img" />
           </motion.div>
           <h1 className="logo-title">
             Ali <span>STUDIO</span>
           </h1>
         </Link>
 
-        {/* Navigation Menu (Desktop) */}
-        <nav className="nav-menu">
-          {['About', 'Portfolio', 'Services', 'Pricing', 'Blog'].map((item) => (
-            <Link 
-              key={item} 
-              to={`/${item.toLowerCase()}`}
-              className="nav-link"
+        <div className="header-center-group">
+          {/* Pages menu button */}
+          <div className="nav-pages-wrapper">
+            <button
+              type="button"
+              className="nav-pages-btn glass"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsNavPagesOpen(!isNavPagesOpen);
+              }}
+              aria-label="Open pages menu"
+              title="Pages"
             >
-              {item}
-              <span className="nav-link-line" />
-            </Link>
-          ))}
-        </nav>
+              <StickyNote size={16} />
+              <span className="nav-pages-btn-text">Studio Atlas</span>
+            </button>
+            <AnimatePresence>
+              {isNavPagesOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="nav-pages-dropdown glass"
+                >
+                  {navPages.map((page) => (
+                    <Link
+                      key={page.name}
+                      to={page.path}
+                      className="nav-pages-link"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsNavPagesOpen(false);
+                        setIsMobileMenuOpen(false);
+                        navigate(page.path);
+                      }}
+                    >
+                      {page.name}
+                    </Link>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Animated Search Bar */}
+          <motion.div
+            className={`nav-search-bar ${isSearchFocused || searchQuery ? 'expanded' : ''}`}
+          >
+            <div className="nav-search-inner glass">
+              <Search size={18} className="nav-search-icon" />
+              <input
+                type="text"
+                placeholder="Search furniture..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (e.target.value) {
+                    document.getElementById('furn-collection')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                className="nav-search-input"
+              />
+              <AnimatePresence>
+                {searchQuery && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={() => setSearchQuery('')}
+                    className="nav-search-clear"
+                    type="button"
+                  >
+                    <X size={14} />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        </div>
 
         {/* Action Controls: Favourites, Cart, Sign In/Register or User welcome menu state */}
         <div className="header-actions">
@@ -291,39 +278,28 @@ export default function Home() {
           </button>
 
           {user && (
-            <button 
+            <button
               onClick={() => {
                 setActiveFilter('My Favourites');
                 document.getElementById('furn-collection')?.scrollIntoView({ behavior: 'smooth' });
-              }} 
-              className="btn-outline nav-favorites-btn"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderColor: 'var(--accent-gold)' }}
+              }}
+              className="icon-btn-mode nav-fav-icon-btn"
+              title={`Favourites (${favorites.length})`}
             >
-              <Heart size={14} fill="var(--accent-gold)" color="var(--accent-gold)" />
-              <span className="fav-text">Favourites ({favorites.length})</span>
+              <Heart size={16} fill="var(--accent-gold)" color="var(--accent-gold)" />
+              {favorites.length > 0 && <span className="fav-mini-count">{favorites.length}</span>}
             </button>
           )}
-          
+
           {user ? (
-            <div className="user-menu-wrapper">
-              <div className="user-welcome-badge" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {user.avatar ? (
-                  <img src={user.avatar} alt={user.username} style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }} />
-                ) : (
-                  <User size={12} />
-                )}
-                Welcome, <span>{user.username}</span>
-              </div>
-              
+            <div className="user-menu-wrapper user-menu-compact">
               {user.role === 'Admin' && (
-                <Link to="/dashboard" className="btn-futuristic">
-                  Admin Dashboard
+                <Link to="/dashboard" className="btn-futuristic btn-compact-nav">
+                  Dashboard
                 </Link>
               )}
-
-              <button onClick={logout} className="btn-outline" style={{ display: 'flex', gap: '8px', padding: '10px 18px' }}>
-                <LogOut size={14} />
-                Logout
+              <button onClick={logout} className="icon-btn-mode" title="Logout">
+                <LogOut size={16} />
               </button>
             </div>
           ) : (
@@ -344,26 +320,48 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Mobile nav links drop-down list */}
+      {/* Mobile menu dropdown */}
       <AnimatePresence>
         {isMobileMenuOpen && (
-          <motion.div 
+          <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="mobile-nav-dropdown glass"
           >
-            {['About', 'Portfolio', 'Services', 'Pricing', 'Blog'].map((item) => (
-              <Link 
-                key={item} 
-                to={`/${item.toLowerCase()}`}
-                className="mobile-nav-link"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {item}
-              </Link>
-            ))}
+            <div className="nav-search-inner glass" style={{ width: '100%' }}>
+              <Search size={18} className="nav-search-icon" />
+              <input
+                type="text"
+                placeholder="Search furniture..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (e.target.value) {
+                    setIsMobileMenuOpen(false);
+                    document.getElementById('furn-collection')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className="nav-search-input"
+              />
+            </div>
+            <div className="mobile-nav-pages-grid">
+              {navPages.map((page) => (
+                <Link
+                  key={page.name}
+                  to={page.path}
+                  className="mobile-nav-link"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsMobileMenuOpen(false);
+                    navigate(page.path);
+                  }}
+                >
+                  {page.name}
+                </Link>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -448,29 +446,6 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Stats Row */}
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8, duration: 1 }}
-          className="stats-container"
-        >
-          {[
-            { value: '47+', label: 'Projects Completed' },
-            { value: '15+', label: 'Years Experience' },
-            { value: '12', label: 'Design Awards' },
-            { value: '100%', label: 'Client Satisfaction' }
-          ].map((stat, idx) => (
-            <div key={idx} className="stat-item">
-              <h3 className="stat-value">
-                {stat.value}
-              </h3>
-              <p className="stat-label">
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </motion.div>
       </main>
 
       {/* NEW: Pic 2 Mega Deals Section */}
@@ -485,12 +460,30 @@ export default function Home() {
               <a href="#furn-collection" className="btn-gold">Shop Now</a>
             </div>
           </div>
-          <div className="deals-image-panel">
-            <img 
-              src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&auto=format&fit=crop&q=80" 
-              alt="Mega Deals Furniture" 
-              className="deals-promo-img" 
-            />
+          <div className="deals-image-panel deals-carousel-panel">
+            <AnimatePresence mode="wait">
+              <motion.img
+                key={dealSlide}
+                src={dealSlides[dealSlide]}
+                alt={`Mega Deals ${dealSlide + 1}`}
+                className="deals-promo-img"
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -30 }}
+                transition={{ duration: 0.6, ease: 'easeInOut' }}
+              />
+            </AnimatePresence>
+            <div className="deals-carousel-dots">
+              {dealSlides.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`deals-dot ${dealSlide === idx ? 'active' : ''}`}
+                  onClick={() => setDealSlide(idx)}
+                  aria-label={`Deal slide ${idx + 1}`}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -506,8 +499,12 @@ export default function Home() {
             <button
               key={cat.name}
               onClick={() => {
-                setActiveFilter(cat.name);
-                document.getElementById('furn-collection')?.scrollIntoView({ behavior: 'smooth' });
+                if (cat.name === 'Popular Categories') {
+                  setActiveFilter(cat.name);
+                  document.getElementById('furn-collection')?.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  navigate(`/products?cat=${encodeURIComponent(cat.name)}`);
+                }
               }}
               className={`category-circle-card glass ${activeFilter === cat.name ? 'active' : ''}`}
             >
@@ -522,26 +519,15 @@ export default function Home() {
 
       {/* NEW: Pic 3 Furniture Cards Section */}
       <section id="furn-collection" className="furniture-section">
-        <h2 className="furniture-section-title font-serif">Discover Our Furniture Collection</h2>
-        <p className="furniture-section-subtitle">Exquisite design, premium materials, and unparalleled craftsmanship.</p>
-
-        {/* NEW: Pic 4 Search Bar & Cart Header */}
-        <div className="search-bar-row">
-          <div className="search-input-frame glass">
-            <Search size={18} className="search-icon-left" />
-            <input 
-              type="text" 
-              placeholder="Search by title, category, or style..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="clear-search-btn">
-                <X size={14} />
-              </button>
-            )}
+        <div className="furniture-section-header-row">
+          <div>
+            <h2 className="furniture-section-title font-serif">Discover Our Furniture Collection</h2>
+            <p className="furniture-section-subtitle">Exquisite design, premium materials, and unparalleled craftsmanship.</p>
           </div>
+          <Link to="/products" className="btn-gold" style={{ padding: '10px 20px', fontSize: '13px', whiteSpace: 'nowrap' }}>
+            View All Products
+            <ArrowRight size={14} />
+          </Link>
         </div>
 
         {/* Category filters bar from Pic 3 */}
@@ -558,179 +544,109 @@ export default function Home() {
         </div>
 
         {/* Cards Grid */}
-        <div className="furniture-grid">
+        <div className="furniture-grid furniture-grid-compact">
           {filteredProducts.map((product) => (
-            <div 
-              key={product.id} 
-              className="furniture-card"
+            <div
+              key={product.id}
+              className="furniture-card furniture-card-compact"
               onClick={() => navigate(`/product/${product.id}`)}
               style={{ cursor: 'pointer' }}
             >
-              <div className="furniture-img-wrapper">
+              <div className="furniture-img-wrapper furniture-img-compact">
                 <img src={product.image} alt={product.title} className="furniture-img" />
-                
-                {/* Hover overlay favorite and share buttons */}
-                <div className="furniture-hover-actions">
-                  <button 
+                <div className="furniture-hover-actions furniture-hover-compact">
+                  <button
                     onClick={(e) => toggleFavorite(e, product.id)}
-                    className="action-btn-circle"
+                    className="action-btn-circle action-btn-sm"
                     style={{ color: favorites.includes(product.id) ? 'var(--accent-gold)' : '#171717' }}
                     title="Add to Favorite"
                   >
-                    <Heart size={20} fill={favorites.includes(product.id) ? 'var(--accent-gold)' : 'none'} />
+                    <Heart size={14} fill={favorites.includes(product.id) ? 'var(--accent-gold)' : 'none'} />
                   </button>
-
-                  <button 
+                  <button
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       addToCart(product, 1, 'Default Color', 'Standard');
                       navigate('/cart');
                     }}
-                    className="action-btn-circle"
+                    className="action-btn-circle action-btn-sm"
                     title="Add to Cart"
                   >
-                    <ShoppingCart size={20} />
-                  </button>
-                  
-                  <button 
-                    onClick={(e) => handleShare(e, product.title)}
-                    className="action-btn-circle"
-                    title="Share product"
-                  >
-                    <Share2 size={20} />
+                    <ShoppingCart size={14} />
                   </button>
                 </div>
               </div>
-
-              {/* Product Info */}
-              <div className="furniture-info">
+              <div className="furniture-info furniture-info-compact">
                 <span className="furn-category">{product.category}</span>
-                <h4 className="furn-title">{product.title}</h4>
-                <p className="furn-desc">{product.description}</p>
-                <span className="furn-price">{product.price}</span>
+                <h4 className="furn-title furn-title-compact">{product.title}</h4>
+                <span className="furn-price furn-price-compact">{product.price}</span>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* NEW: Pic 4 Footer Section */}
-      <footer className="furn-footer">
-        <div className="footer-inner">
-          <div className="footer-cols-row">
-            {/* Column 1 */}
+      <footer className="furn-footer furn-footer-compact">
+        <div className="footer-inner footer-inner-compact">
+          <div className="footer-cols-row footer-cols-compact">
             <div className="footer-link-col">
-              <h4 className="footer-col-header">Products</h4>
-              <ul className="footer-link-list">
-                <li><a href="#themes">Weebly Themes</a></li>
-                <li><a href="#faq">Pre-Sale FAQs</a></li>
-                <li><a href="#ticket">Submit a Ticket</a></li>
+              <h4 className="footer-col-header">Shop by Category</h4>
+              <ul className="footer-link-list footer-cat-grid">
+                {footerCategories.map((cat) => (
+                  <li key={cat.name}><Link to={cat.path}>{cat.name}</Link></li>
+                ))}
               </ul>
             </div>
 
-            {/* Column 2 */}
             <div className="footer-link-col">
-              <h4 className="footer-col-header">Services</h4>
-              <ul className="footer-link-list">
-                <li><Link to="/services">Theme Tweak</Link></li>
-                <li><Link to="/services">Custom Craft</Link></li>
-                <li><Link to="/services">Full Consultation</Link></li>
+              <h4 className="footer-col-header">Popular Items</h4>
+              <ul className="footer-link-list footer-cat-grid">
+                {furnitureProducts.slice(0, 8).map((p) => (
+                  <li key={p.id}><Link to={`/product/${p.id}`}>{p.title}</Link></li>
+                ))}
               </ul>
             </div>
 
-            {/* Column 3 */}
             <div className="footer-link-col">
-              <h4 className="footer-col-header">Showcase</h4>
-              <ul className="footer-link-list">
-                <li><Link to="/portfolio">Widgetkit</Link></li>
-                <li><a href="#support">Support Forums</a></li>
-                <li><a href="#knowledge">Documentation</a></li>
-              </ul>
-            </div>
-
-            {/* Column 4 */}
-            <div className="footer-link-col">
-              <h4 className="footer-col-header">Company</h4>
+              <h4 className="footer-col-header">Studio Atlas</h4>
               <ul className="footer-link-list">
                 <li><Link to="/about">About Us</Link></li>
-                <li><Link to="/contact">Contact Us</Link></li>
-                <li><a href="#affiliates">Affiliates</a></li>
-                <li><a href="#resources">Resources</a></li>
+                <li><Link to="/portfolio">Portfolio</Link></li>
+                <li><Link to="/services">Services</Link></li>
+                <li><Link to="/pricing">Pricing</Link></li>
+                <li><Link to="/blog">Blog</Link></li>
+                <li><Link to="/contact">Contact</Link></li>
+                <li><Link to="/products">All Products</Link></li>
               </ul>
             </div>
 
-            {/* Brand column with logo aligned (Pic 3 logo adjustment) */}
-            <div className="footer-brand-col">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                <div className="logo-img-wrapper" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
-                  <img src="/logo.png" alt="Ali Logo" className="logo-img" />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', gap: '8px' }}>
-                  <h3 className="footer-logo-title" style={{ margin: 0, lineHeight: 1 }}>Ali <span>STUDIO</span></h3>
-                  <span className="footer-brand-slogan" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>— Furnishing Spaces</span>
-                </div>
+            <div className="footer-brand-col footer-brand-compact">
+              <div className="footer-brand-top">
+                <img src="/logo.svg" alt="Ali Logo" className="footer-bottom-logo" />
+                <h3 className="footer-logo-title footer-logo-sm">Ali <span>STUDIO</span></h3>
               </div>
-
-              {/* Pic 3 Contact report & suggestion box */}
-              <div className="footer-feedback-box" style={{ marginTop: '20px', maxWidth: '240px' }}>
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: '500' }}>
-                  Submit suggestion or report issue:
-                </p>
-                <form onSubmit={handleFeedbackSubmit} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <div className="form-underlined-group" style={{ flexGrow: 1, borderBottomColor: 'rgba(255,255,255,0.1)' }}>
-                    <input 
-                      type="text" 
-                      placeholder="Type suggestion/report..." 
-                      value={feedbackText}
-                      onChange={(e) => setFeedbackText(e.target.value)}
-                      required
-                      style={{ padding: '6px 0', fontSize: '12px', color: '#fff', width: '100%' }}
-                    />
-                  </div>
-                  <button type="submit" className="btn-gold" style={{ padding: '6px 10px', borderRadius: '8px', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Send size={11} />
-                  </button>
+              <div className="footer-feedback-box footer-feedback-compact">
+                <div className="footer-feedback-type-row">
+                  <button type="button" className={`feedback-type-chip ${feedbackType === 'suggestion' ? 'active' : ''}`} onClick={() => setFeedbackType('suggestion')}>Suggestion</button>
+                  <button type="button" className={`feedback-type-chip ${feedbackType === 'complaint' ? 'active' : ''}`} onClick={() => setFeedbackType('complaint')}>Complaint</button>
+                </div>
+                <form onSubmit={handleFeedbackSubmit} className="footer-feedback-form">
+                  <input type="text" placeholder="Your message..." value={feedbackText} onChange={(e) => setFeedbackText(e.target.value)} required />
+                  <button type="submit" className="btn-gold footer-send-btn"><Send size={11} /></button>
                 </form>
+                {feedbackSuccess && <p className="footer-feedback-success">Sent to admin!</p>}
               </div>
             </div>
           </div>
 
           <div className="footer-divider-line" />
-
-          {/* Social connections and copyright from Pic 4 */}
-          <div className="footer-bottom-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div className="logo-img-wrapper" style={{ width: '28px', height: '28px', borderRadius: '6px' }}>
-                <img src="/logo.png" alt="Ali Logo" className="logo-img" />
-              </div>
-              <span className="footer-logo-title" style={{ fontSize: '15px', margin: 0 }}>Ali <span>STUDIO</span></span>
-            </div>
-            
-            <p className="footer-copyright-text" style={{ margin: 0 }}>
-              &copy; {new Date().getFullYear()} Ali Studio. All rights reserved.
-            </p>
-
-            <div className="footer-social-circles" style={{ margin: 0 }}>
-              <button className="social-circle-btn" aria-label="Facebook">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                  <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c4.56-.93 8-4.96 8-9.75z"/>
-                </svg>
-              </button>
-              <button className="social-circle-btn" aria-label="Twitter">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                  <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-                </svg>
-              </button>
-              <button className="social-circle-btn" aria-label="RSS">
-                <Rss size={16} />
-              </button>
-              <button className="social-circle-btn" aria-label="Google Plus">
-                <Globe size={16} />
-              </button>
-              <button className="social-circle-btn" aria-label="Award">
-                <Award size={16} />
-              </button>
+          <div className="footer-bottom-row footer-bottom-compact">
+            <span className="footer-copyright-text">&copy; {new Date().getFullYear()} Ali Studio</span>
+            <div className="footer-social-circles">
+              <button className="social-circle-btn social-circle-sm" aria-label="Facebook"><Globe size={14} /></button>
+              <button className="social-circle-btn social-circle-sm" aria-label="RSS"><Rss size={14} /></button>
+              <button className="social-circle-btn social-circle-sm" aria-label="Award"><Award size={14} /></button>
             </div>
           </div>
         </div>

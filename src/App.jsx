@@ -10,6 +10,8 @@ import Blog from './pages/Blog';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ProductDetails from './pages/ProductDetails';
+import Cart from './pages/Cart';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -38,6 +40,8 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/product/:id" element={<ProductDetails />} />
+            <Route path="/cart" element={<Cart />} />
             
             {/* Sub-pages for Studio (Public Filled Components) */}
             <Route path="/about" element={<About />} />

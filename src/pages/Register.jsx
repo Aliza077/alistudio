@@ -14,9 +14,23 @@ export default function Register() {
     gender: 'Male',
     role: 'User', // User or Admin
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    avatar: null
   });
+  const [avatarPreview, setAvatarPreview] = useState(null);
   const [error, setError] = useState('');
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, avatar: reader.result });
+        setAvatarPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -56,6 +70,26 @@ export default function Register() {
         {/* Right Side: Form */}
         <div className="register-right-form-panel">
           <h2 className="register-form-title font-serif">Registration Form</h2>
+
+          {/* Profile Picture Upload Field */}
+          <div className="avatar-upload-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            <div className="avatar-preview-circle" style={{ width: '70px', height: '70px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: 'rgba(0,0,0,0.3)', position: 'relative' }}>
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Avatar Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <User size={28} style={{ color: 'rgba(255,255,255,0.3)' }} />
+              )}
+            </div>
+            <label className="btn-outline" style={{ padding: '6px 12px', fontSize: '11px', cursor: 'pointer', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', display: 'inline-block' }}>
+              Upload Picture
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleAvatarChange} 
+                style={{ display: 'none' }} 
+              />
+            </label>
+          </div>
           
           {error && <div className="form-error-msg">{error}</div>}
 

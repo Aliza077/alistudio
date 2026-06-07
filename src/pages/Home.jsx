@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Moon, Sun, Heart, Share2, LogOut, Rss, Globe, Award, Send } from 'lucide-react';
+import { 
+  ArrowRight, Moon, Sun, Heart, Share2, LogOut, Rss, Globe, Award, Send,
+  ShoppingCart, Search, Menu, X
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -23,135 +26,146 @@ const slides = [
   }
 ];
 
-// Pic 3: Category filter buttons
-const filters = ['Popular Categories', 'Styles', 'Types', 'Subjects', 'Platforms', 'Office', 'Outdoor', 'Decor'];
+// Pic 3 Categories icon models
+const visualCategories = [
+  { name: 'Popular Categories', label: 'All Designs', image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200&auto=format&fit=crop&q=80' },
+  { name: 'Sofas', label: 'Sofas', image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200&auto=format&fit=crop&q=80' },
+  { name: 'Bed', label: 'Bed', image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=200&auto=format&fit=crop&q=80' },
+  { name: 'Dressing Table', label: 'Dressing Table', image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=200&auto=format&fit=crop&q=80' },
+  { name: 'Chairs', label: 'Chairs', image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=200&auto=format&fit=crop&q=80' }
+];
+
+const filters = ['Popular Categories', 'Sofas', 'Bed', 'Dressing Table', 'Chairs'];
 
 // Mock catalog furniture products with descriptions and high-resolution images
-const furnitureProducts = [
+export const furnitureProducts = [
   {
     id: 1,
     title: 'Oatmeal Accent Lounge Chair',
-    category: 'Popular Categories',
+    category: 'Chairs',
     price: '$640',
     description: 'A cozy accent chair with soft premium oatmeal upholstery and solid oak legs.',
     image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=800&auto=format&fit=crop&q=80'
   },
   {
     id: 2,
-    title: 'Oakwood Minimalist Cabinet',
-    category: 'Styles',
+    title: 'Oakwood Dressing Cabinet',
+    category: 'Dressing Table',
     price: '$1,250',
-    description: 'Minimalist solid oak storage cabinet with soft-close drawers and clean lines.',
+    description: 'Minimalist solid oak dressing table and cabinet with soft-close drawers and clean lines.',
     image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=800&auto=format&fit=crop&q=80'
   },
   {
     id: 3,
-    title: 'Warm Bulb Amber Pendant Lamp',
-    category: 'Types',
+    title: 'Classic Wooden Dining Chair',
+    category: 'Chairs',
     price: '$180',
-    description: 'Amber glass pendant lamp casting a warm, ambient glow over any dining space.',
-    image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80'
+    description: 'Solid wood dining chair with comfortable seat padding and minimalist backrest.',
+    image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=800&auto=format&fit=crop&q=80'
   },
   {
     id: 4,
     title: 'Emerald Velvet Occasional Sofa',
-    category: 'Popular Categories',
+    category: 'Sofas',
     price: '$2,100',
     description: 'Luxurious emerald velvet sofa with sleek golden legs and high-density foam cushions.',
     image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&auto=format&fit=crop&q=80'
   },
   {
     id: 5,
-    title: 'Walnut Executive Desk',
-    category: 'Styles',
+    title: 'Walnut Dressing Table & Mirror',
+    category: 'Dressing Table',
     price: '$890',
-    description: 'Premium dark walnut executive desk with built-in wireless charger and cable organizer.',
+    description: 'Premium dark walnut dressing vanity with a large circular mirror and multiple jewelry organizers.',
     image: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=800&auto=format&fit=crop&q=80'
   },
   {
     id: 6,
     title: 'Luxury King Master Bed Set',
-    category: 'Types',
+    category: 'Bed',
     price: '$3,400',
     description: 'King size bed set with high-grade tufted headboard, matching side tables, and organic sheets.',
     image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&auto=format&fit=crop&q=80'
   },
   {
     id: 7,
-    title: 'Antique Brass Geometric Bookends',
-    category: 'Subjects',
+    title: 'Elegant Dressing Table Stool',
+    category: 'Dressing Table',
     price: '$95',
-    description: 'Stunning geometric solid brass bookends to hold your favorite collection in style.',
+    description: 'Round cushioned dressing stool with sleek gold legs and premium velvet cover.',
     image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&auto=format&fit=crop&q=80'
   },
   {
     id: 8,
-    title: 'Smart Ambient LED Studio Lamp',
-    category: 'Platforms',
-    price: '$310',
-    description: 'App-controlled LED studio lamp with full RGB spectrum, brightness controls, and music sync.',
+    title: 'Luxury Tufted Lounger Sofa',
+    category: 'Sofas',
+    price: '$910',
+    description: 'App-controlled smart reclining sofa with adjustable headrest and integrated USB ports.',
     image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80'
   },
   {
     id: 9,
-    title: 'Nordic Wooden Dining Table',
-    category: 'Popular Categories',
+    title: 'Nordic Wooden Bed Frame',
+    category: 'Bed',
     price: '$1,150',
-    description: 'Solid ash wood dining table that seats up to 8 guests. Perfect for family gatherings.',
+    description: 'Nordic solid ash wood queen bed frame with integrated bedside panels.',
     image: 'https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?w=800&auto=format&fit=crop&q=80'
   },
   {
     id: 10,
     title: 'Ergonomic Mesh Office Chair',
-    category: 'Office',
+    category: 'Chairs',
     price: '$420',
     description: 'Fully adjustable mesh chair with adaptive lumbar support, 3D armrests, and synchro-tilt mechanism.',
     image: 'https://images.unsplash.com/photo-1580481072645-022f9a6dbf27?w=800&auto=format&fit=crop&q=80'
   },
   {
     id: 11,
-    title: 'Teakwood Outdoor Lounge Set',
-    category: 'Outdoor',
+    title: 'Teakwood Outdoor Sofa Set',
+    category: 'Sofas',
     price: '$1,850',
-    description: 'Weather-resistant teakwood lounge chair set with quick-dry cushions covered in Sunbrella fabric.',
+    description: 'Weather-resistant teakwood outdoor sofa set with quick-dry cushions covered in Sunbrella fabric.',
     image: 'https://images.unsplash.com/photo-1599423300746-b62533397364?w=800&auto=format&fit=crop&q=80'
   },
   {
     id: 12,
-    title: 'Minimalist Ceramic Vase Set',
-    category: 'Decor',
-    price: '$120',
-    description: 'Three handcrafted matte ceramic vases in earth tones to highlight dry botanical arrangements.',
+    title: 'Classic White Dressing Console',
+    category: 'Dressing Table',
+    price: '$850',
+    description: 'Dressing table console with three drawers and matching circular vanity mirror.',
     image: 'https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=800&auto=format&fit=crop&q=80'
   },
   {
     id: 13,
-    title: 'Rustic Steel & Pine Bookshelf',
-    category: 'Styles',
+    title: 'Comfortable Single Guest Bed',
+    category: 'Bed',
     price: '$580',
-    description: 'Industrial-grade black steel frames supporting five levels of solid reclaimed pine shelving.',
+    description: 'Compact guest bed frame with high-quality pine headboard and steel support structure.',
     image: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=800&auto=format&fit=crop&q=80'
   },
   {
     id: 14,
-    title: 'Smart Touch Bedside Lamp',
-    category: 'Platforms',
-    price: '$160',
-    description: 'Touch-sensitive bedside table lamp featuring three light levels and an integrated Qi wireless charging pad.',
+    title: 'Premium Ergonomic Desk Chair',
+    category: 'Chairs',
+    price: '$320',
+    description: 'Fully adjustable high-back ergonomic desk chair with lumbar support.',
     image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80'
   }
 ];
 
 export default function Home() {
-  const { user, logout } = useAuth();
+  const { user, logout, cart, addToCart } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeFilter, setActiveFilter] = useState('Popular Categories');
   const [favorites, setFavorites] = useState([]);
   const [feedbackText, setFeedbackText] = useState('');
-
-  const displayFilters = user ? [...filters, 'My Favourites'] : filters;
+  
+  // Search & Mobile menu toggle states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Auto slide effect
   useEffect(() => {
@@ -161,7 +175,9 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  const toggleFavorite = (productId) => {
+  const toggleFavorite = (e, productId) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (favorites.includes(productId)) {
       setFavorites(favorites.filter(id => id !== productId));
     } else {
@@ -169,7 +185,9 @@ export default function Home() {
     }
   };
 
-  const handleShare = (productTitle) => {
+  const handleShare = (e, productTitle) => {
+    e.preventDefault();
+    e.stopPropagation();
     alert(`Sharing link for: ${productTitle}`);
   };
 
@@ -179,10 +197,22 @@ export default function Home() {
     setFeedbackText('');
   };
 
-  // Filter products dynamically based on selected tab
-  const filteredProducts = (activeFilter === 'My Favourites' && user)
-    ? furnitureProducts.filter((product) => favorites.includes(product.id))
-    : furnitureProducts.filter((product) => product.category === activeFilter);
+  const displayFilters = user ? [...filters, 'My Favourites'] : filters;
+
+  // Filter products dynamically based on search query AND active filter tab
+  const filteredProducts = furnitureProducts.filter((product) => {
+    // 1. Filter by search query (match title, category or description)
+    const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
+                          
+    // 2. Filter by category tab
+    const matchesCategory = (activeFilter === 'My Favourites' && user)
+      ? favorites.includes(product.id)
+      : (activeFilter === 'Popular Categories' || product.category === activeFilter);
+
+    return matchesSearch && matchesCategory;
+  });
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -232,7 +262,7 @@ export default function Home() {
           </h1>
         </Link>
 
-        {/* Navigation Menu */}
+        {/* Navigation Menu (Desktop) */}
         <nav className="nav-menu">
           {['About', 'Portfolio', 'Services', 'Pricing', 'Blog'].map((item) => (
             <Link 
@@ -246,8 +276,16 @@ export default function Home() {
           ))}
         </nav>
 
-        {/* Action Controls: Sign In/Register or User welcome menu state */}
+        {/* Action Controls: Favourites, Cart, Sign In/Register or User welcome menu state */}
         <div className="header-actions">
+          {/* Cart Icon Button */}
+          <Link to="/cart" className="icon-btn-mode cart-icon-link" style={{ position: 'relative' }}>
+            <ShoppingCart size={18} />
+            {cart.length > 0 && (
+              <span className="cart-badge-count">{cart.reduce((acc, item) => acc + item.quantity, 0)}</span>
+            )}
+          </Link>
+
           <button onClick={toggleTheme} className="icon-btn-mode">
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
@@ -268,7 +306,12 @@ export default function Home() {
           
           {user ? (
             <div className="user-menu-wrapper">
-              <div className="user-welcome-badge">
+              <div className="user-welcome-badge" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {user.avatar ? (
+                  <img src={user.avatar} alt={user.username} style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }} />
+                ) : (
+                  <User size={12} />
+                )}
                 Welcome, <span>{user.username}</span>
               </div>
               
@@ -293,8 +336,37 @@ export default function Home() {
               </Link>
             </>
           )}
+
+          {/* Hamburger Menu Toggle (Mobile) */}
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="mobile-menu-toggle-btn">
+            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
       </header>
+
+      {/* Mobile nav links drop-down list */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mobile-nav-dropdown glass"
+          >
+            {['About', 'Portfolio', 'Services', 'Pricing', 'Blog'].map((item) => (
+              <Link 
+                key={item} 
+                to={`/${item.toLowerCase()}`}
+                className="mobile-nav-link"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {item}
+              </Link>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content Area */}
       <main className="main-content">
@@ -376,7 +448,7 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Stats Row (Always horizontal row now) */}
+        {/* Stats Row */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -401,10 +473,76 @@ export default function Home() {
         </motion.div>
       </main>
 
+      {/* NEW: Pic 2 Mega Deals Section */}
+      <section className="mega-deals-section glass">
+        <div className="deals-banner-content">
+          <div className="deals-text-panel">
+            <span className="deals-fest-tag">6.6 MID YEAR FESTIVAL</span>
+            <h2 className="deals-main-title font-serif">MEGA DEALS</h2>
+            <p className="deals-discount-text">UP TO <span>80% OFF</span> ON PREMIUM LUXURY FURNITURE</p>
+            <span className="deals-dates-lbl">5 JUNE (8PM) - 10 JUNE</span>
+            <div style={{ marginTop: '20px' }}>
+              <a href="#furn-collection" className="btn-gold">Shop Now</a>
+            </div>
+          </div>
+          <div className="deals-image-panel">
+            <img 
+              src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&auto=format&fit=crop&q=80" 
+              alt="Mega Deals Furniture" 
+              className="deals-promo-img" 
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* NEW: Pic 3 Categories Circles Grid */}
+      <section className="categories-circles-section">
+        <div className="category-section-header">
+          <h2 className="category-section-title font-serif">Shop by Category</h2>
+          <p className="category-section-subtitle">Select a visual collection to filter products dynamically</p>
+        </div>
+        <div className="categories-circles-grid">
+          {visualCategories.map((cat) => (
+            <button
+              key={cat.name}
+              onClick={() => {
+                setActiveFilter(cat.name);
+                document.getElementById('furn-collection')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className={`category-circle-card glass ${activeFilter === cat.name ? 'active' : ''}`}
+            >
+              <div className="category-img-frame">
+                <img src={cat.image} alt={cat.label} className="category-circle-img" />
+              </div>
+              <span className="category-circle-lbl">{cat.label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       {/* NEW: Pic 3 Furniture Cards Section */}
       <section id="furn-collection" className="furniture-section">
-        <h2 className="furniture-section-title">Discover Our Furniture Collection</h2>
+        <h2 className="furniture-section-title font-serif">Discover Our Furniture Collection</h2>
         <p className="furniture-section-subtitle">Exquisite design, premium materials, and unparalleled craftsmanship.</p>
+
+        {/* NEW: Pic 4 Search Bar & Cart Header */}
+        <div className="search-bar-row">
+          <div className="search-input-frame glass">
+            <Search size={18} className="search-icon-left" />
+            <input 
+              type="text" 
+              placeholder="Search by title, category, or style..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="clear-search-btn">
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Category filters bar from Pic 3 */}
         <div className="furniture-nav-filters">
@@ -422,23 +560,43 @@ export default function Home() {
         {/* Cards Grid */}
         <div className="furniture-grid">
           {filteredProducts.map((product) => (
-            <div key={product.id} className="furniture-card">
+            <div 
+              key={product.id} 
+              className="furniture-card"
+              onClick={() => navigate(`/product/${product.id}`)}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="furniture-img-wrapper">
                 <img src={product.image} alt={product.title} className="furniture-img" />
                 
                 {/* Hover overlay favorite and share buttons */}
                 <div className="furniture-hover-actions">
                   <button 
-                    onClick={() => toggleFavorite(product.id)}
+                    onClick={(e) => toggleFavorite(e, product.id)}
                     className="action-btn-circle"
-                    style={{ color: favorites.includes(product.id) ? 'var(--accent-purple)' : '#171717' }}
+                    style={{ color: favorites.includes(product.id) ? 'var(--accent-gold)' : '#171717' }}
+                    title="Add to Favorite"
                   >
-                    <Heart size={20} fill={favorites.includes(product.id) ? 'var(--accent-purple)' : 'none'} />
+                    <Heart size={20} fill={favorites.includes(product.id) ? 'var(--accent-gold)' : 'none'} />
+                  </button>
+
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      addToCart(product, 1, 'Default Color', 'Standard');
+                      navigate('/cart');
+                    }}
+                    className="action-btn-circle"
+                    title="Add to Cart"
+                  >
+                    <ShoppingCart size={20} />
                   </button>
                   
                   <button 
-                    onClick={() => handleShare(product.title)}
+                    onClick={(e) => handleShare(e, product.title)}
                     className="action-btn-circle"
+                    title="Share product"
                   >
                     <Share2 size={20} />
                   </button>
@@ -541,8 +699,19 @@ export default function Home() {
           <div className="footer-divider-line" />
 
           {/* Social connections and copyright from Pic 4 */}
-          <div className="footer-bottom-row">
-            <div className="footer-social-circles">
+          <div className="footer-bottom-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="logo-img-wrapper" style={{ width: '28px', height: '28px', borderRadius: '6px' }}>
+                <img src="/logo.png" alt="Ali Logo" className="logo-img" />
+              </div>
+              <span className="footer-logo-title" style={{ fontSize: '15px', margin: 0 }}>Ali <span>STUDIO</span></span>
+            </div>
+            
+            <p className="footer-copyright-text" style={{ margin: 0 }}>
+              &copy; {new Date().getFullYear()} Ali Studio. All rights reserved.
+            </p>
+
+            <div className="footer-social-circles" style={{ margin: 0 }}>
               <button className="social-circle-btn" aria-label="Facebook">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                   <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c4.56-.93 8-4.96 8-9.75z"/>
@@ -563,10 +732,6 @@ export default function Home() {
                 <Award size={16} />
               </button>
             </div>
-            
-            <p className="footer-copyright-text">
-              &copy; {new Date().getFullYear()} Ali Studio. All rights reserved.
-            </p>
           </div>
         </div>
       </footer>

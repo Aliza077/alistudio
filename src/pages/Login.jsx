@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { sendVerificationCode, verifyCode } from '../utils/emailService';
+import SiteNavbar from '../components/SiteNavbar';
 import { User, Lock, Eye, EyeOff, Mail, Key } from 'lucide-react';
 
 export default function Login() {
-  const { login, resetPassword, registeredUsers } = useAuth();
+  const { login, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState(location.state?.email || '');
@@ -19,10 +20,18 @@ export default function Login() {
   const [forgotStep, setForgotStep] = useState(0);
   const [forgotEmail, setForgotEmail] = useState('');
   const [enteredCode, setEnteredCode] = useState('');
+  const [fallbackCode, setFallbackCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
   const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.openForgot) {
+      setForgotStep(1);
+      if (location.state.email) setForgotEmail(location.state.email);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     let interval = null;
@@ -32,12 +41,12 @@ export default function Login() {
     return () => clearInterval(interval);
   }, [resendTimer]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccessMsg('');
 
-    const res = login(email, password);
+    const res = await login(email, password);
     if (res.success) {
       if (res.user.role === 'Admin') {
         navigate('/dashboard');
@@ -52,12 +61,27 @@ export default function Login() {
   const sendResetCode = async (targetEmail) => {
     setSending(true);
     setError('');
+    setSuccessMsg('');
     try {
-      await sendVerificationCode(targetEmail, 'reset');
+      const data = await sendVerificationCode(targetEmail, 'reset');
       setResendTimer(60);
+      if (data?.fallbackCode) {
+        setFallbackCode(data.fallbackCode);
+        setEnteredCode(data.fallbackCode);
+        setSuccessMsg(`Your reset code is ${data.fallbackCode}. Enter it below (also check email/spam).`);
+      } else {
+        setFallbackCode('');
+        setSuccessMsg(data?.message || 'Code sent to your email. Check inbox and spam.');
+      }
       return true;
     } catch (err) {
-      setError(err.message || 'Failed to send code. Make sure the email server is running.');
+      const msg = err.message || 'Failed to send reset email. Please try again later.';
+      // If backend is down, give actionable message
+      if (/404|not found|not running|timed out|timeout|JSON/i.test(msg)) {
+        setError('Cannot reach email API. Run: cd project && npm run dev:all — then try again.');
+      } else {
+        setError(msg);
+      }
       return false;
     } finally {
       setSending(false);
@@ -67,14 +91,6 @@ export default function Login() {
   const handleForgotEmailSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    const userExists = registeredUsers.some(
-      (u) => u.email.toLowerCase() === forgotEmail.toLowerCase()
-    );
-    if (!userExists) {
-      setError('No account found with this email address.');
-      return;
-    }
 
     const sent = await sendResetCode(forgotEmail);
     if (sent) {
@@ -99,7 +115,7 @@ export default function Login() {
     }
   };
 
-  const handleResetPasswordSubmit = (e) => {
+  const handleResetPasswordSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -113,16 +129,18 @@ export default function Login() {
       return;
     }
 
-    const success = resetPassword(forgotEmail, newPassword);
-    if (success) {
+    const result = await resetPassword(forgotEmail, enteredCode, newPassword);
+    if (result.success) {
       setForgotStep(4);
     } else {
-      setError('Failed to reset password. Please try again.');
+      setError(result.message || 'Failed to reset password. Verify the code again or request a new one.');
     }
   };
 
   return (
-    <div className="login-page-container">
+    <div className="auth-page-shell">
+      <SiteNavbar variant="overlay" />
+      <div className="login-page-container">
       <div className="login-card-neumorphic glass">
         <div className="login-profile-circle">
           {forgotStep === 0 ? <User size={32} className="login-profile-icon" /> : <Key size={32} className="login-profile-icon" />}
@@ -189,7 +207,7 @@ export default function Login() {
         {forgotStep === 1 && (
           <>
             <h2 className="login-title-text font-serif">Forgot Password</h2>
-            <p className="login-subtitle-text">Enter your email — a 6-digit code will be sent to your Gmail inbox</p>
+            <p className="login-subtitle-text">Enter your registered email — a 6-digit code will be sent to your Gmail inbox</p>
 
             {error && <div className="form-error-msg">{error}</div>}
 
@@ -220,10 +238,16 @@ export default function Login() {
           <>
             <h2 className="login-title-text font-serif">Verify Code</h2>
             <p className="login-subtitle-text">
-              Enter the 6-digit code sent to <strong>{forgotEmail}</strong>. Check your Gmail inbox.
+              Enter the 6-digit code sent to <strong>{forgotEmail}</strong>. Check your Gmail inbox (and spam folder).
             </p>
 
             {error && <div className="form-error-msg">{error}</div>}
+            {successMsg && forgotStep === 2 && <div className="form-success-msg">{successMsg}</div>}
+            {fallbackCode && forgotStep === 2 && (
+              <div className="form-success-msg" style={{ letterSpacing: '0.2em', fontSize: '18px', fontWeight: 700 }}>
+                Code: {fallbackCode}
+              </div>
+            )}
 
             <form onSubmit={handleVerifyCodeSubmit} className="login-form-el">
               <div className="neumorphic-input-group">
@@ -300,6 +324,7 @@ export default function Login() {
           </>
         )}
       </div>
+    </div>
     </div>
   );
 }

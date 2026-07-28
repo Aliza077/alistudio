@@ -1,24 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Lock, ChevronDown, Check } from 'lucide-react';
+import { sendWelcomeEmail } from '../utils/emailService';
+import SiteNavbar from '../components/SiteNavbar';
+import { User, Mail, Lock, ChevronDown, Check, Phone } from 'lucide-react';
 
 export default function Register() {
-  const { register, emailExists } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     username: '',
     email: '',
+    phone: '',
     gender: 'Male',
-    role: 'User',
     password: '',
     confirmPassword: '',
     avatar: null,
   });
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -36,7 +39,7 @@ export default function Register() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -50,19 +53,27 @@ export default function Register() {
       return;
     }
 
-    if (emailExists(formData.email)) {
-      setError('An account with this email already exists');
-      return;
-    }
+    setSubmitting(true);
+    const result = await register(formData);
+    setSubmitting(false);
 
-    const result = register(formData);
     if (result.success) {
+      sendWelcomeEmail({
+        firstName: formData.firstName,
+        email: formData.email,
+      }).catch(() => {
+        /* welcome email is optional */
+      });
       navigate('/login', { state: { email: formData.email, registered: true } });
+    } else {
+      setError(result.message || 'Registration failed');
     }
   };
 
   return (
-    <div className="register-page-container">
+    <div className="auth-page-shell">
+      <SiteNavbar variant="overlay" />
+      <div className="register-page-container">
       <div className="register-card-box glass">
         <div className="register-left-img-panel">
           <img src="/register_side.png" alt="Furniture Catalog" className="register-catalog-img" />
@@ -112,19 +123,17 @@ export default function Register() {
               <Mail size={14} className="input-icon-right" />
             </div>
 
+            <div className="form-underlined-group">
+              <input type="text" name="phone" placeholder="Phone Number" value={formData.phone} onChange={handleChange} required />
+              <Phone size={14} className="input-icon-right" />
+            </div>
+
             <div className="form-input-row">
               <div className="form-underlined-group half-width select-wrapper">
                 <select name="gender" value={formData.gender} onChange={handleChange}>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
-                </select>
-                <ChevronDown size={14} className="input-icon-right pointer-events-none" />
-              </div>
-              <div className="form-underlined-group half-width select-wrapper">
-                <select name="role" value={formData.role} onChange={handleChange}>
-                  <option value="User">User Role</option>
-                  <option value="Admin">Admin Role</option>
                 </select>
                 <ChevronDown size={14} className="input-icon-right pointer-events-none" />
               </div>
@@ -141,8 +150,8 @@ export default function Register() {
             </div>
 
             <div className="register-form-footer">
-              <button type="submit" className="btn-gold register-submit-btn">
-                Register
+              <button type="submit" className="btn-gold register-submit-btn" disabled={submitting}>
+                {submitting ? 'Saving to database...' : 'Register'}
                 <Check size={14} />
               </button>
               <p className="login-redirect-text">
@@ -152,6 +161,7 @@ export default function Register() {
           </form>
         </div>
       </div>
+    </div>
     </div>
   );
 }

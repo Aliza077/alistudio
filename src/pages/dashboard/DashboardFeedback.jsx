@@ -24,7 +24,7 @@ export default function DashboardFeedback() {
       className="dash-page-content"
     >
       <div className="dash-page-header glass">
-        <div className="dash-page-icon-wrap" style={{ background: 'rgba(197,168,128,0.1)', borderColor: 'rgba(197,168,128,0.2)', color: '#c5a880' }}>
+        <div className="dash-page-icon-wrap feedback-theme-icon">
           <MessageSquare size={24} />
         </div>
         <div>

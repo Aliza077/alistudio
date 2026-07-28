@@ -2,23 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  LayoutDashboard, Brain, CreditCard, ArrowLeftRight, FileText,
-  TrendingUp, Landmark, Receipt, Sun, Moon, Plus, ChevronRight,
-  Calendar, Sliders, Menu, X, User, MessageSquare
+  LayoutDashboard, ShoppingBag, Sun, Moon, Plus, ChevronRight,
+  Calendar, Sliders, Menu, X, User, MessageSquare, Users, Package, Images, Tags, Home
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import Logo from './Logo';
 
 const navItems = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-  { name: 'Ali AI', icon: Brain, path: '/dashboard/ai' },
-  { name: 'Accounts', icon: CreditCard, path: '/dashboard/accounts' },
-  { name: 'Transactions', icon: ArrowLeftRight, path: '/dashboard/transactions' },
-  { name: 'Reports', icon: FileText, path: '/dashboard/reports' },
+  { name: 'Products Management', icon: Package, path: '/dashboard/products' },
+  { name: 'Categories Management', icon: Tags, path: '/dashboard/categories' },
+  { name: 'Home Carousel & Deals', icon: Images, path: '/dashboard/home-settings' },
+  { name: 'Users Management', icon: Users, path: '/dashboard/users' },
+  { name: 'Orders Management', icon: ShoppingBag, path: '/dashboard/orders' },
   { name: 'Reports & Complaints', icon: MessageSquare, path: '/dashboard/feedback' },
-  { name: 'Investments', icon: TrendingUp, path: '/dashboard/investments' },
-  { name: 'Loans', icon: Landmark, path: '/dashboard/loans' },
-  { name: 'Taxes', icon: Receipt, path: '/dashboard/taxes' },
 ];
 
 export default function DashboardLayout() {
@@ -49,6 +47,16 @@ export default function DashboardLayout() {
   }, [isSidebarOpen]);
 
   useEffect(() => {
+    // Restore user theme preference inside the admin dashboard
+    const savedTheme = localStorage.getItem('ali_theme') || 'dark';
+    if (savedTheme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+  }, []);
+
+  useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') setIsSidebarOpen(false);
     };
@@ -64,10 +72,7 @@ export default function DashboardLayout() {
         <div className="sidebar-backdrop" onClick={closeSidebar} role="presentation" />
       )}
 
-      <motion.aside
-        initial={{ opacity: 0, x: -50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+      <aside
         className={`dash-sidebar glass ${isSidebarOpen ? 'sidebar-open' : ''}`}
       >
         <div className="sidebar-glow" />
@@ -75,11 +80,11 @@ export default function DashboardLayout() {
         <div className="sidebar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div className="sidebar-logo-wrapper">
-              <img src="/logo.svg" alt="Ali Logo" className="avatar-img" />
+              <Logo size={40} variant={theme === 'light' ? 'gold' : 'blue'} />
             </div>
-            <h2 className="sidebar-brand-name">Ali <span>FINTECH</span></h2>
+            <h2 className="sidebar-brand-name">Ali <span>STUDIO</span></h2>
           </div>
-          <button onClick={closeSidebar} className="sidebar-close-btn" aria-label="Close menu" type="button">
+          <button onClick={(e) => { e.stopPropagation(); closeSidebar(); }} className="sidebar-close-btn" aria-label="Close menu" type="button">
             <X size={20} />
           </button>
         </div>
@@ -87,13 +92,7 @@ export default function DashboardLayout() {
         <div className="sidebar-user-card">
           <div className="user-card-top">
             <div className="user-avatar-wrapper">
-              {user?.avatar ? (
-                <img src={user.avatar} alt={displayName} className="avatar-img" />
-              ) : (
-                <div className="avatar-fallback">
-                  <User size={20} />
-                </div>
-              )}
+              <img src={user?.avatar || '/logo.svg'} alt={displayName} className="avatar-img" style={{ objectFit: 'contain', padding: (user?.avatar ? '0' : '4px'), backgroundColor: '#0a0a0a', borderRadius: '10px' }} />
             </div>
             <div className="sidebar-nav-item-left">
               <div className="mode-toggle-pill">
@@ -107,11 +106,14 @@ export default function DashboardLayout() {
             </div>
           </div>
           <div>
-            <p className="user-date-label">
-              <Calendar size={10} />
-              {today}
-            </p>
-            <h3 className="user-greeting">Welcome back, {displayName}!</h3>
+            <motion.h3 
+              initial={{ opacity: 0, x: -15 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+              className="user-greeting"
+            >
+              Welcome back, <span className="greeting-name">{displayName}</span>!
+            </motion.h3>
           </div>
         </div>
 
@@ -120,7 +122,7 @@ export default function DashboardLayout() {
             <Link
               key={item.name}
               to={item.path}
-              className={`sidebar-nav-item ${location.pathname === item.path ? 'active' : ''}`}
+              className={`sidebar-nav-item ${location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path)) ? 'active' : ''}`}
               onClick={closeSidebar}
             >
               <div className="sidebar-nav-item-left">
@@ -132,20 +134,15 @@ export default function DashboardLayout() {
           ))}
         </nav>
 
-        <Link to="/" className="sidebar-back-home" onClick={closeSidebar}>
-          <ArrowLeftRight size={14} />
-          <span>Back to Studio Home</span>
-        </Link>
-
         <div className="sidebar-promo-card">
           <div className="promo-glow" />
           <h4 className="promo-title">
             <span className="promo-dot" />
-            Activate Ali Pro
+            Ali Studio Admin
           </h4>
-          <p className="promo-desc">Elevate financial management with state-of-the-art predictive AI modeling.</p>
+          <p className="promo-desc">Manage furniture inventory, customer orders, and user accounts from one place.</p>
         </div>
-      </motion.aside>
+      </aside>
 
       <div className="dash-content-body">
         <motion.header
@@ -164,18 +161,24 @@ export default function DashboardLayout() {
             </span>
           </div>
 
-          {location.pathname === '/dashboard' && (
-            <div className="dash-header-right">
-              <button className="header-btn-widget" type="button" onClick={() => setShowWidgetPanel(true)}>
-                <Sliders size={14} />
-                <span>Manage Widgets</span>
-              </button>
-              <button className="header-btn-add" type="button" onClick={() => setShowAddWidget(true)}>
-                <Plus size={14} />
-                <span>Add Widget</span>
-              </button>
-            </div>
-          )}
+          <div className="dash-header-right">
+            {location.pathname === '/dashboard' && (
+              <>
+                <button className="header-btn-widget" type="button" onClick={() => setShowWidgetPanel(true)}>
+                  <Sliders size={14} />
+                  <span>Manage Widgets</span>
+                </button>
+                <button className="header-btn-add" type="button" onClick={() => setShowAddWidget(true)}>
+                  <Plus size={14} />
+                  <span>Add Widget</span>
+                </button>
+              </>
+            )}
+            <Link to="/" className="header-btn-home-animated">
+              <Home size={14} />
+              <span>Return to Home Page</span>
+            </Link>
+          </div>
         </motion.header>
 
         <Outlet context={{ showWidgetPanel, setShowWidgetPanel, showAddWidget, setShowAddWidget }} />

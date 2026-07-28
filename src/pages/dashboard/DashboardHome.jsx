@@ -1,38 +1,66 @@
-import React, { useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   TrendingUp, ArrowUpRight, ArrowDownLeft, ChevronRight, X, Plus, Check
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const ALL_WIDGETS = [
   { id: 'insights', label: 'AI Insights', span: 'card-span-4' },
-  { id: 'balance', label: 'Balance Overview', span: 'card-span-4' },
-  { id: 'earnings', label: 'Earnings Status', span: 'card-span-4' },
-  { id: 'transactions', label: 'Recent Transactions', span: 'card-span-8' },
-  { id: 'spending', label: 'Spending Category', span: 'card-span-4' },
+  { id: 'balance', label: 'Sales Revenue Overview', span: 'card-span-4' },
+  { id: 'earnings', label: 'Users Count Status', span: 'card-span-4' },
+  { id: 'transactions', label: 'Recent Orders', span: 'card-span-8' },
+  { id: 'spending', label: 'Products Inventory Overview', span: 'card-span-4' },
 ];
 
 export default function DashboardHome() {
+  const { token } = useAuth();
+  const navigate = useNavigate();
   const { showWidgetPanel, setShowWidgetPanel, showAddWidget, setShowAddWidget } = useOutletContext();
   const [insightPage, setInsightPage] = useState(0);
   const [visibleWidgets, setVisibleWidgets] = useState(
     ALL_WIDGETS.map((w) => w.id)
   );
 
-  const insights = [
-    'Your Transaction Volume has increased by 5% Since last Month',
-    'Ali AI suggests moving $5,000 to high-yield savings account',
-    'Subscription audit complete: 2 unused services identified',
-  ];
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const transactions = [
-    { name: 'PlayStation', date: '31 Mar, 3:20 PM', amount: '-$19.99', type: 'expense', card: '**** 0224' },
-    { name: 'Netflix', date: '29 Mar, 5:11 PM', amount: '-$30.00', type: 'expense', card: '**** 0224' },
-    { name: 'Airbnb', date: '29 Mar, 1:20 PM', amount: '-$300.00', type: 'expense', card: '**** 4432' },
-    { name: 'Tommy C.', date: '27 Mar, 2:31 PM', amount: '+$27.00', type: 'income', card: '**** 0224', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80' },
-    { name: 'Apple', date: '27 Mar, 11:04 AM', amount: '-$10.00', type: 'expense', card: '**** 4432' },
-  ];
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const currentToken = token || localStorage.getItem('ali_token');
+        const res = await fetch('/api/admin/stats', {
+          headers: {
+            'Authorization': `Bearer ${currentToken}`
+          }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setStats(data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching dashboard stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, [token]);
+
+  const insights = stats
+    ? [
+        `${stats.totalProducts || 0} products in catalog across ${(stats.categoryBreakdown || []).length} categories`,
+        `${stats.totalUsers || 0} registered customers — ${stats.totalOrders || 0} orders placed so far`,
+        stats.recentOrders?.length
+          ? `Latest order ${stats.recentOrders[0].trackingId || ''} — $${stats.recentOrders[0].totalAmount || 0}`
+          : 'No orders yet — promote your furniture collection on the home page',
+      ]
+    : [
+        'Connect to the API to load live store insights',
+        'Manage products and inventory from Products Management',
+        'Review customer feedback under Reports & Complaints',
+      ];
 
   const linePoints = 'M 10 75 Q 40 45, 70 85 T 130 35 T 190 65 T 250 20 T 310 50';
 
@@ -56,6 +84,9 @@ export default function DashboardHome() {
 
   return (
     <>
+      {loading && (
+        <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>Loading dashboard data...</p>
+      )}
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="dash-grid">
         {visibleWidgets.includes('insights') && (
           <motion.div variants={cardVariants} className="dash-card card-span-4 glass ai-insights-card">
@@ -83,8 +114,8 @@ export default function DashboardHome() {
           <motion.div variants={cardVariants} className="dash-card card-span-4 glass">
             <div className="bal-card-top">
               <div>
-                <p className="bal-label">Balance Overview</p>
-                <h2 className="bal-value">$100,557</h2>
+                <p className="bal-label">Sales Revenue Overview</p>
+                <h2 className="bal-value">${stats ? stats.totalSales.toLocaleString() : '0'}</h2>
               </div>
               <span className="trend-badge up"><TrendingUp size={12} />+12%</span>
             </div>
@@ -92,17 +123,17 @@ export default function DashboardHome() {
               <svg style={{ width: '100%', height: '100%' }} viewBox="0 0 320 100">
                 <defs>
                   <linearGradient id="chartGlow" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#00f0ff" stopOpacity="0" />
+                    <stop offset="0%" stopColor="var(--accent-blue)" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="var(--accent-blue)" stopOpacity="0" />
                   </linearGradient>
                 </defs>
                 <motion.path d={`${linePoints} L 310 100 L 10 100 Z`} fill="url(#chartGlow)" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 1 }} />
-                <motion.path d={linePoints} fill="none" stroke="#00f0ff" strokeWidth="3.5" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ delay: 0.2, duration: 1.5, ease: 'easeInOut' }} />
+                <motion.path d={linePoints} fill="none" stroke="var(--accent-blue)" strokeWidth="3.5" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ delay: 0.2, duration: 1.5, ease: 'easeInOut' }} />
               </svg>
             </div>
             <div className="bal-buttons-row">
-              <button className="bal-action-btn" type="button">44 Transactions</button>
-              <button className="bal-action-btn" type="button">12 Categories</button>
+              <button className="bal-action-btn" type="button">{stats ? stats.totalOrders : 0} Orders Placed</button>
+              <button className="bal-action-btn" type="button">{(stats?.categoryBreakdown || []).length} Active Categories</button>
             </div>
           </motion.div>
         )}
@@ -111,30 +142,30 @@ export default function DashboardHome() {
           <motion.div variants={cardVariants} className="dash-card card-span-4 glass">
             <div className="bal-card-top">
               <div>
-                <p className="bal-label">Earnings Status</p>
-                <h2 className="bal-value">$100,557</h2>
+                <p className="bal-label">Registered Members</p>
+                <h2 className="bal-value">{stats ? stats.totalUsers : '0'} Members</h2>
               </div>
               <span className="trend-badge up"><TrendingUp size={12} />+7%</span>
             </div>
             <div className="radial-gauge-wrapper">
               <svg style={{ width: '144px', height: '144px' }} className="transform -rotate-90" viewBox="0 0 144 144">
-                <circle cx="72" cy="72" r="54" fill="transparent" stroke="rgba(255,255,255,0.04)" strokeWidth="12" strokeDasharray="339.29" strokeDashoffset="101.78" strokeLinecap="round" />
-                <motion.circle cx="72" cy="72" r="54" fill="transparent" stroke="url(#purpleBlueGrad)" strokeWidth="12" strokeDasharray="339.29" initial={{ strokeDashoffset: 339.29 }} animate={{ strokeDashoffset: 339.29 - (339.29 * 0.58) }} transition={{ delay: 0.3, duration: 1.8, ease: 'easeOut' }} strokeLinecap="round" />
+                <circle cx="72" cy="72" r="54" fill="transparent" stroke="var(--bg-tertiary)" strokeWidth="12" strokeDasharray="339.29" strokeDashoffset="101.78" strokeLinecap="round" />
+                <motion.circle cx="72" cy="72" r="54" fill="transparent" stroke="url(#purpleBlueGrad)" strokeWidth="12" strokeDasharray="339.29" initial={{ strokeDashoffset: 339.29 }} animate={{ strokeDashoffset: 339.29 - (339.29 * 0.75) }} transition={{ delay: 0.3, duration: 1.8, ease: 'easeOut' }} strokeLinecap="round" />
                 <defs>
                   <linearGradient id="purpleBlueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#00f0ff" />
-                    <stop offset="100%" stopColor="#d000ff" />
+                    <stop offset="0%" stopColor="var(--accent-blue)" />
+                    <stop offset="100%" stopColor="var(--accent-purple)" />
                   </linearGradient>
                 </defs>
               </svg>
               <div className="radial-percentage">
-                <span className="radial-val">58%</span>
-                <span className="radial-lbl">Earnings goal</span>
+                <span className="radial-val">{stats ? stats.totalUsers : 0}</span>
+                <span className="radial-lbl">Active Accounts</span>
               </div>
             </div>
             <div className="radial-indicators">
-              <div className="radial-indicator-item"><span className="radial-indicator-dot blue" />Current</div>
-              <div className="radial-indicator-item"><span className="radial-indicator-dot purple" />Target</div>
+              <div className="radial-indicator-item"><span className="radial-indicator-dot blue" />Standard Users</div>
+              <div className="radial-indicator-item"><span className="radial-indicator-dot purple" />Administrator Accounts</div>
             </div>
           </motion.div>
         )}
@@ -142,29 +173,37 @@ export default function DashboardHome() {
         {visibleWidgets.includes('transactions') && (
           <motion.div variants={cardVariants} className="dash-card card-span-8 glass">
             <div className="tx-header">
-              <h3 className="tx-title">Recent Transactions</h3>
-              <button className="tx-view-all-btn" type="button">View All<ChevronRight size={14} /></button>
+              <h3 className="tx-title">Recent Customer Orders</h3>
+              <button className="tx-view-all-btn" type="button" onClick={() => navigate('/dashboard/products')}>Manage Inventory<ChevronRight size={14} /></button>
             </div>
             <div className="tx-list">
-              {transactions.map((tx, idx) => (
-                <div key={idx} className="tx-item">
-                  <div className="tx-item-left">
-                    {tx.avatar ? (
-                      <div className="tx-avatar-web"><img src={tx.avatar} alt={tx.name} className="avatar-img" /></div>
-                    ) : (
-                      <div className="tx-avatar-mock">{tx.name[0]}</div>
-                    )}
-                    <div>
-                      <h4 className="tx-name">{tx.name}</h4>
-                      <p className="tx-date">{tx.date}</p>
+              {stats && stats.recentOrders && stats.recentOrders.length > 0 ? (
+                stats.recentOrders.map((order) => {
+                  const dateStr = new Date(order.createdAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  });
+                  return (
+                    <div key={order._id} className="tx-item">
+                      <div className="tx-item-left">
+                        <div className="tx-avatar-mock">{order.email[0].toUpperCase()}</div>
+                        <div>
+                          <h4 className="tx-name" style={{ fontSize: '13px' }}>{order.email}</h4>
+                          <p className="tx-date">{dateStr}</p>
+                        </div>
+                      </div>
+                      <div className="tx-item-right">
+                        <span className="tx-card-label" style={{ fontSize: '11px' }}>{order.trackingId}</span>
+                        <span className="tx-amount income">${order.totalAmount.toLocaleString()}</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="tx-item-right">
-                    <span className="tx-card-label">{tx.card}</span>
-                    <span className={`tx-amount ${tx.type === 'income' ? 'income' : ''}`}>{tx.amount}</span>
-                  </div>
-                </div>
-              ))}
+                  );
+                })
+              ) : (
+                <p style={{ color: 'var(--text-muted)', padding: '16px 0' }}>No recent orders found.</p>
+              )}
             </div>
           </motion.div>
         )}
@@ -173,29 +212,35 @@ export default function DashboardHome() {
           <motion.div variants={cardVariants} className="dash-card card-span-4 glass">
             <div className="bal-card-top">
               <div>
-                <p className="bal-label">Spending Category</p>
-                <h2 className="bal-value">112,829</h2>
+                <p className="bal-label">Catalogue Products</p>
+                <h2 className="bal-value">{stats ? stats.totalProducts : '0'} Items</h2>
               </div>
-              <span className="trend-badge down"><ArrowDownLeft size={12} />-2%</span>
+              <span className="trend-badge up"><TrendingUp size={12} />Active</span>
             </div>
             <div className="spend-bar-chart">
-              {[
-                { label: 'Clothing', value: '75%', color: '#00f0ff' },
-                { label: 'Groceries', value: '45%', color: '#d000ff' },
-                { label: 'Pets', value: '30%', color: '#00ffc4' },
-                { label: 'Bills', value: '20%', color: '#ffb700' },
-              ].map((bar, idx) => (
-                <div key={idx} className="chart-bar-container">
-                  <div className="chart-bar-track">
-                    <motion.div className="chart-bar-fill" style={{ background: `linear-gradient(to top, ${bar.color}44, ${bar.color})`, boxShadow: `0 0 15px ${bar.color}22` }} initial={{ height: 0 }} animate={{ height: bar.value }} transition={{ delay: idx * 0.1, duration: 1.2, ease: 'easeOut' }} />
-                  </div>
-                  <span className="chart-bar-label">{bar.label}</span>
-                </div>
-              ))}
+              {stats && stats.categoryBreakdown && stats.categoryBreakdown.length > 0 ? (
+                stats.categoryBreakdown.slice(0, 4).map((cat, idx) => {
+                  const colors = ['var(--accent-blue)', 'var(--accent-purple)', 'var(--accent-gold)', '#ffb700'];
+                  const totalStock = stats.categoryBreakdown.reduce((acc, c) => acc + c.stock, 0) || 1;
+                  const pct = Math.min(100, Math.floor((cat.stock / totalStock) * 100)) + '%';
+                  return (
+                    <div key={cat._id} className="chart-bar-container">
+                      <div className="chart-bar-track">
+                        <motion.div className="chart-bar-fill" style={{ background: `linear-gradient(to top, ${colors[idx % 4]}44, ${colors[idx % 4]})`, boxShadow: `0 0 15px ${colors[idx % 4]}22` }} initial={{ height: 0 }} animate={{ height: pct }} transition={{ delay: idx * 0.1, duration: 1.2, ease: 'easeOut' }} />
+                      </div>
+                      <span className="chart-bar-label">{cat._id}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>No inventory breakdown available.</p>
+              )}
             </div>
             <div className="spend-footer">
-              <span className="spend-limit-lbl">Active Limit</span>
-              <span className="spend-limit-val">$1,200 / Month</span>
+              <span className="spend-limit-lbl">Total Stock Count</span>
+              <span className="spend-limit-val">
+                {stats && stats.categoryBreakdown ? stats.categoryBreakdown.reduce((acc, c) => acc + c.stock, 0) : 0} Units
+              </span>
             </div>
           </motion.div>
         )}

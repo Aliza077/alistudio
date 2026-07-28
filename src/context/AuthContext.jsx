@@ -1,28 +1,14 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { mapApiUser, getStoredToken, getAuthHeaders } from '../utils/authHelpers';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [registeredUsers, setRegisteredUsers] = useState(() => {
-    const users = localStorage.getItem('ali_users');
-    if (users) {
-      return JSON.parse(users);
-    }
-    const defaultAdmin = {
-      firstName: 'Admin',
-      lastName: 'Ali',
-      username: 'admin',
-      email: 'admin@ali.com',
-      gender: 'Male',
-      role: 'Admin',
-      password: 'admin',
-      avatar: null,
-      emailVerified: true,
-    };
-    localStorage.setItem('ali_users', JSON.stringify([defaultAdmin]));
-    return [defaultAdmin];
-  });
+  const [token, setToken] = useState(() => getStoredToken());
+  const [authLoading, setAuthLoading] = useState(true);
+  const [usersList, setUsersList] = useState([]);
 
   const [cart, setCart] = useState(() => {
     const savedCart = localStorage.getItem('ali_cart');
@@ -34,70 +20,206 @@ export function AuthProvider({ children }) {
     return saved ? JSON.parse(saved) : [];
   });
 
-  useEffect(() => {
-    const session = localStorage.getItem('ali_session');
-    if (session) {
-      setUser(JSON.parse(session));
-    }
+  const [favourites, setFavourites] = useState(() => {
+    const saved = localStorage.getItem('ali_favourites');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const logout = useCallback(() => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('ali_token');
+    localStorage.removeItem('ali_session');
   }, []);
 
-  const emailExists = (email) => {
-    return registeredUsers.some(
-      (u) => u.email.toLowerCase() === email.toLowerCase()
-    );
-  };
+  const persistSession = useCallback((loggedUser, authToken) => {
+    setUser(loggedUser);
+    setToken(authToken);
+    localStorage.setItem('ali_token', authToken);
+    localStorage.setItem('ali_session', JSON.stringify(loggedUser));
+  }, []);
 
-  const register = (userData) => {
-    const { confirmPassword, ...cleanData } = userData;
-    const normalizedUser = {
-      ...cleanData,
-      email: cleanData.email.toLowerCase(),
-      emailVerified: true,
-    };
-
-    const updatedUsers = [...registeredUsers, normalizedUser];
-    setRegisteredUsers(updatedUsers);
-    localStorage.setItem('ali_users', JSON.stringify(updatedUsers));
-    return { success: true };
-  };
-
-  const login = (email, password) => {
-    const foundUser = registeredUsers.find(
-      (u) =>
-        u.email.toLowerCase() === email.toLowerCase() &&
-        u.password === password
-    );
-    if (foundUser) {
-      setUser(foundUser);
-      localStorage.setItem('ali_session', JSON.stringify(foundUser));
-      return { success: true, user: foundUser };
-    }
-    return { success: false, message: 'Invalid email or password' };
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('ali_session');
-  };
-
-  const resetPassword = (email, newPassword) => {
-    const userIndex = registeredUsers.findIndex(
-      (u) => u.email.toLowerCase() === email.toLowerCase()
-    );
-    if (userIndex > -1) {
-      const updatedUsers = [...registeredUsers];
-      updatedUsers[userIndex].password = newPassword;
-      setRegisteredUsers(updatedUsers);
-      localStorage.setItem('ali_users', JSON.stringify(updatedUsers));
-
-      if (user && user.email.toLowerCase() === email.toLowerCase()) {
-        const updatedSession = { ...user, password: newPassword };
-        setUser(updatedSession);
-        localStorage.setItem('ali_session', JSON.stringify(updatedSession));
+  useEffect(() => {
+    async function bootstrapAuth() {
+      const storedToken = getStoredToken();
+      if (!storedToken) {
+        logout();
+        setAuthLoading(false);
+        return;
       }
-      return true;
+
+      try {
+        const res = await fetchWithTimeout('/api/user/me', {
+          headers: getAuthHeaders(storedToken),
+        }, 6000);
+        const data = await res.json();
+
+        if (res.ok) {
+          const loggedUser = mapApiUser(data.data);
+          persistSession(loggedUser, storedToken);
+        } else {
+          logout();
+        }
+      } catch {
+        const session = localStorage.getItem('ali_session');
+        if (session) {
+          setUser(JSON.parse(session));
+          setToken(storedToken);
+        } else {
+          logout();
+        }
+      } finally {
+        setAuthLoading(false);
+      }
     }
-    return false;
+
+    bootstrapAuth();
+  }, [logout, persistSession]);
+
+  const register = async (userData) => {
+    try {
+      const res = await fetch('/api/user/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${userData.firstName} ${userData.lastName}`.trim() || userData.username,
+          username: userData.username,
+          email: userData.email,
+          phone: userData.phone || '',
+          gender: userData.gender || '',
+          password: userData.password,
+          image: userData.avatar || '',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+      return { success: true, data: data.data };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  };
+
+  const login = async (email, password) => {
+    try {
+      const res = await fetch('/api/user/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      const loggedUser = mapApiUser(data.data);
+      persistSession(loggedUser, data.token);
+      return { success: true, user: loggedUser };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  };
+
+  const resetPassword = async (email, code, newPassword) => {
+    try {
+      const res = await fetch('/api/user/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, forgotpasswordcode: code, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to reset password');
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Reset Password Error:', error);
+      return { success: false, message: error.message };
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch('/api/user/list', {
+        headers: getAuthHeaders(token),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUsersList(data.data);
+        return data.data;
+      }
+      if (res.status === 401) {
+        logout();
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return [];
+    }
+  };
+
+  const deleteUser = async (userId) => {
+    try {
+      const res = await fetch(`/api/user/${userId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(token),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUsersList((prev) => prev.filter((usr) => usr._id !== userId));
+        return { success: true, message: data.message };
+      }
+      return { success: false, message: data.message || 'Failed to delete user.' };
+    } catch (error) {
+      console.error('Delete User Error:', error);
+      return { success: false, message: error.message };
+    }
+  };
+
+  const updateUserRole = async (userId, urole) => {
+    try {
+      const id = String(userId || '');
+      if (!id) {
+        return { success: false, message: 'Invalid user id.' };
+      }
+
+      const headers = {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(token),
+      };
+      const body = JSON.stringify({ userId: id, urole });
+
+      let res = await fetch('/api/user/update-role', { method: 'PUT', headers, body });
+      if (res.status === 404) {
+        res = await fetch('/api/user/update-role', { method: 'POST', headers, body });
+      }
+      if (res.status === 404) {
+        res = await fetch(`/api/user/${id}/role`, { method: 'PUT', headers, body: JSON.stringify({ urole }) });
+      }
+
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        return {
+          success: false,
+          message: 'Backend API not reachable. Stop all node processes and run: cd project && npm run dev:all',
+        };
+      }
+
+      const data = await res.json();
+      if (res.ok) {
+        setUsersList((prev) =>
+          prev.map((usr) => {
+            const usrId = String(usr._id || usr.id);
+            return usrId === id ? { ...usr, urole } : usr;
+          })
+        );
+        return { success: true, message: data.message };
+      }
+      return { success: false, message: data.message || 'Failed to update role.' };
+    } catch (error) {
+      return { success: false, message: error.message || 'Network error while updating role.' };
+    }
   };
 
   const saveCartToStorage = (newCart) => {
@@ -106,7 +228,8 @@ export function AuthProvider({ children }) {
   };
 
   const addToCart = (product, quantity = 1, selectedColor = '', selectedSize = '') => {
-    const cartItemId = `${product.id}-${selectedColor.replace(/\s+/g, '')}-${selectedSize}`;
+    const pId = product._id || product.id;
+    const cartItemId = `${pId}-${selectedColor.replace(/\s+/g, '')}-${selectedSize}`;
     const existingIndex = cart.findIndex((item) => item.cartItemId === cartItemId);
     let updatedCart = [...cart];
 
@@ -115,7 +238,7 @@ export function AuthProvider({ children }) {
     } else {
       updatedCart.push({
         cartItemId,
-        id: product.id,
+        productId: pId,
         title: product.title,
         price: product.price,
         image: product.image,
@@ -168,16 +291,42 @@ export function AuthProvider({ children }) {
     localStorage.setItem('ali_feedback', JSON.stringify(updated));
   };
 
+  const addToFavourites = (product) => {
+    const pId = product._id || product.id;
+    if (!favourites.some((item) => (item._id || item.id) === pId)) {
+      const updated = [...favourites, product];
+      setFavourites(updated);
+      localStorage.setItem('ali_favourites', JSON.stringify(updated));
+    }
+  };
+
+  const removeFromFavourites = (productId) => {
+    const updated = favourites.filter((item) => (item._id || item.id) !== productId);
+    setFavourites(updated);
+    localStorage.setItem('ali_favourites', JSON.stringify(updated));
+  };
+
+  const isFavourite = (productId) => {
+    return favourites.some((item) => (item._id || item.id) === productId);
+  };
+
+  const isAdmin = user?.role === 'Admin';
+
   return (
     <AuthContext.Provider
       value={{
         user,
-        registeredUsers,
+        token,
+        authLoading,
+        isAdmin,
+        usersList,
         register,
         login,
         logout,
         resetPassword,
-        emailExists,
+        fetchUsers,
+        deleteUser,
+        updateUserRole,
         cart,
         addToCart,
         removeFromCart,
@@ -186,6 +335,10 @@ export function AuthProvider({ children }) {
         feedbackList,
         submitFeedback,
         deleteFeedback,
+        favourites,
+        addToFavourites,
+        removeFromFavourites,
+        isFavourite,
       }}
     >
       {children}

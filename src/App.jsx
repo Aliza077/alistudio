@@ -1,22 +1,22 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
+import Favourites from './pages/Favourites';
 import DashboardLayout from './components/DashboardLayout';
 import DashboardHome from './pages/dashboard/DashboardHome';
-import DashboardAI from './pages/dashboard/DashboardAI';
-import DashboardAccounts from './pages/dashboard/DashboardAccounts';
-import DashboardTransactions from './pages/dashboard/DashboardTransactions';
-import DashboardReports from './pages/dashboard/DashboardReports';
 import DashboardFeedback from './pages/dashboard/DashboardFeedback';
-import DashboardInvestments from './pages/dashboard/DashboardInvestments';
-import DashboardLoans from './pages/dashboard/DashboardLoans';
-import DashboardTaxes from './pages/dashboard/DashboardTaxes';
+import DashboardUsers from './pages/dashboard/DashboardUsers';
+import DashboardProducts from './pages/dashboard/DashboardProducts';
+import DashboardCategories from './pages/dashboard/DashboardCategories';
+import DashboardHomeSettings from './pages/dashboard/DashboardHomeSettings';
+import DashboardOrders from './pages/dashboard/DashboardOrders';
 import About from './pages/About';
 import Portfolio from './pages/Portfolio';
 import Services from './pages/Services';
 import Pricing from './pages/Pricing';
 import Blog from './pages/Blog';
 import Contact from './pages/Contact';
+import HelpCenter from './pages/HelpCenter';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProductDetails from './pages/ProductDetails';
@@ -26,7 +26,15 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 
 function ProtectedRoute({ children }) {
-  const { user } = useAuth();
+  const { user, authLoading } = useAuth();
+
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+        Verifying session...
+      </div>
+    );
+  }
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -51,6 +59,7 @@ export default function App() {
             <Route path="/products" element={<Products />} />
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/cart" element={<Cart />} />
+            <Route path="/favourites" element={<Favourites />} />
 
             <Route path="/about" element={<About />} />
             <Route path="/portfolio" element={<Portfolio />} />
@@ -58,6 +67,7 @@ export default function App() {
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/help-center" element={<HelpCenter />} />
 
             <Route
               path="/dashboard"
@@ -68,14 +78,12 @@ export default function App() {
               }
             >
               <Route index element={<DashboardHome />} />
-              <Route path="ai" element={<DashboardAI />} />
-              <Route path="accounts" element={<DashboardAccounts />} />
-              <Route path="transactions" element={<DashboardTransactions />} />
-              <Route path="reports" element={<DashboardReports />} />
               <Route path="feedback" element={<DashboardFeedback />} />
-              <Route path="investments" element={<DashboardInvestments />} />
-              <Route path="loans" element={<DashboardLoans />} />
-              <Route path="taxes" element={<DashboardTaxes />} />
+              <Route path="users" element={<DashboardUsers />} />
+              <Route path="products" element={<DashboardProducts />} />
+              <Route path="categories" element={<DashboardCategories />} />
+              <Route path="home-settings" element={<DashboardHomeSettings />} />
+              <Route path="orders" element={<DashboardOrders />} />
             </Route>
           </Routes>
         </Router>

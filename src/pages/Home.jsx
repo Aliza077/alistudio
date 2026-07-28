@@ -2,100 +2,160 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ArrowRight, Moon, Sun, Heart, Share2, LogOut, Rss, Globe, Award, Send,
-  ShoppingCart, Search, Menu, X, StickyNote
+  ArrowRight, Heart, Share2, Rss, Globe, Award, Send,
+  ShoppingCart
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import { furnitureProducts, footerCategories } from '../data/furnitureData';
-import { studioNavPages } from '../data/studioNav';
+import { footerCategories } from '../data/furnitureData';
+import { fetchProducts } from '../utils/productApi';
+import { readCache, writeCache } from '../utils/homeCache';
+import SiteNavbar from '../components/SiteNavbar';
+import SiteFooter from '../components/SiteFooter';
+import Logo from '../components/Logo';
 
-const navPages = studioNavPages;
-
-const slides = [
-  {
-    image: '/slide1.png',
-    title: 'Transforming Spaces',
-    subtitle: 'Into Extraordinary Experiences'
-  },
-  {
-    image: '/slide2.png',
-    title: 'Minimalist Elegance',
-    subtitle: 'Crafted For Modern Living'
-  },
-  {
-    image: '/slide3.png',
-    title: 'Futuristic Workspaces',
-    subtitle: 'Designed For Absolute Focus'
-  }
+const DEFAULT_SLIDES = [
+  { image: '/slide1.png', title: 'Transforming Spaces', subtitle: 'Into Extraordinary Experiences' },
+  { image: '/slide2.png', title: 'Minimalist Elegance', subtitle: 'Crafted For Modern Living' },
+  { image: '/slide3.png', title: 'Futuristic Workspaces', subtitle: 'Designed For Absolute Focus' },
 ];
 
-const dealSlides = [
+const DEFAULT_DEAL_IMAGES = [
   'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&auto=format&fit=crop&q=80',
   'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&auto=format&fit=crop&q=80',
   'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&auto=format&fit=crop&q=80',
 ];
 
-// Pic 3 Categories icon models
-const visualCategories = [
+const DEFAULT_CATEGORIES = [
   { name: 'Popular Categories', label: 'All Designs', image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200&auto=format&fit=crop&q=80' },
   { name: 'Sofas', label: 'Sofas', image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200&auto=format&fit=crop&q=80' },
   { name: 'Bed', label: 'Bed', image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=200&auto=format&fit=crop&q=80' },
   { name: 'Dressing Table', label: 'Dressing Table', image: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=200&auto=format&fit=crop&q=80' },
-  { name: 'Chairs', label: 'Chairs', image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=200&auto=format&fit=crop&q=80' }
+  { name: 'Chairs', label: 'Chairs', image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=200&auto=format&fit=crop&q=80' },
 ];
 
 const filters = ['Popular Categories', 'Sofas', 'Bed', 'Dressing Table', 'Chairs', 'Tables', 'Wardrobes', 'Lighting', 'Decor'];
 
 export default function Home() {
-  const { user, logout, cart, addToCart, submitFeedback } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { user, addToCart, submitFeedback, addToFavourites, removeFromFavourites, isFavourite } = useAuth();
   const navigate = useNavigate();
   
+  const [slides, setSlides] = useState(DEFAULT_SLIDES);
+  const [dealSlides, setDealSlides] = useState(DEFAULT_DEAL_IMAGES);
+  const [megaDeals, setMegaDeals] = useState({
+    festTag: '6.6 MID YEAR FESTIVAL',
+    title: 'MEGA DEALS',
+    discountText: 'UP TO 80% OFF ON PREMIUM LUXURY FURNITURE',
+    datesLabel: '5 JUNE (8PM) - 10 JUNE',
+  });
+  const [visualCategories, setVisualCategories] = useState(DEFAULT_CATEGORIES);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [dealSlide, setDealSlide] = useState(0);
   const [activeFilter, setActiveFilter] = useState('Popular Categories');
-  const [favorites, setFavorites] = useState([]);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackType, setFeedbackType] = useState('suggestion');
   const [feedbackSuccess, setFeedbackSuccess] = useState(false);
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isNavPagesOpen, setIsNavPagesOpen] = useState(false);
+  const [productsList, setProductsList] = useState([]);
 
   useEffect(() => {
+    const loadHomeData = async () => {
+      const cachedSettings = readCache('ali_home_settings');
+      const cachedCategories = readCache('ali_home_categories');
+
+      if (cachedSettings) {
+        if (cachedSettings.slides?.length) setSlides(cachedSettings.slides);
+        if (cachedSettings.megaDeals) {
+          setMegaDeals(cachedSettings.megaDeals);
+          if (cachedSettings.megaDeals.images?.length) {
+            setDealSlides(cachedSettings.megaDeals.images);
+          }
+        }
+      }
+
+      if (cachedCategories?.length) {
+        setVisualCategories(
+          cachedCategories.map((c) => ({
+            name: c.name,
+            label: c.label || c.name,
+            image: c.image,
+          }))
+        );
+      }
+
+      try {
+        const productsPromise = fetchProducts();
+        const settingsPromise = cachedSettings
+          ? Promise.resolve(null)
+          : fetch('/api/admin/home-settings').then((r) => r.json()).catch(() => null);
+        const catsPromise = cachedCategories
+          ? Promise.resolve(null)
+          : fetch('/api/category/getall').then((r) => r.json()).catch(() => null);
+
+        const [products, settingsRes, catsRes] = await Promise.all([
+          productsPromise,
+          settingsPromise,
+          catsPromise,
+        ]);
+
+        setProductsList(products);
+
+        if (settingsRes?.data) {
+          writeCache('ali_home_settings', settingsRes.data);
+          if (settingsRes.data.slides?.length) setSlides(settingsRes.data.slides);
+          if (settingsRes.data.megaDeals) {
+            setMegaDeals(settingsRes.data.megaDeals);
+            if (settingsRes.data.megaDeals.images?.length) {
+              setDealSlides(settingsRes.data.megaDeals.images);
+            }
+          }
+        }
+
+        if (catsRes?.data?.length) {
+          writeCache('ali_home_categories', catsRes.data);
+          setVisualCategories(
+            catsRes.data.map((c) => ({
+              name: c.name,
+              label: c.label || c.name,
+              image: c.image,
+            }))
+          );
+        }
+      } catch (err) {
+        console.error('Error loading home data:', err);
+      }
+    };
+    loadHomeData();
+  }, []);
+
+  useEffect(() => {
+    if (!slides.length) return undefined;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, []);
+  }, [slides.length]);
 
   useEffect(() => {
+    if (!dealSlides.length) return undefined;
     const timer = setInterval(() => {
       setDealSlide((prev) => (prev + 1) % dealSlides.length);
-    }, 3000);
+    }, 4000);
     return () => clearInterval(timer);
-  }, []);
+  }, [dealSlides.length]);
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (!e.target.closest('.nav-pages-wrapper')) {
-        setIsNavPagesOpen(false);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
-
-  const toggleFavorite = (e, productId) => {
+  const toggleFavorite = (e, product) => {
     e.preventDefault();
     e.stopPropagation();
-    if (favorites.includes(productId)) {
-      setFavorites(favorites.filter(id => id !== productId));
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    const pId = product._id || product.id;
+    if (isFavourite(pId)) {
+      removeFromFavourites(pId);
     } else {
-      setFavorites([...favorites, productId]);
+      addToFavourites(product);
     }
   };
 
@@ -117,15 +177,15 @@ export default function Home() {
   const displayFilters = user ? [...filters, 'My Favourites'] : filters;
 
   // Filter products dynamically based on search query AND active filter tab
-  const filteredProducts = furnitureProducts.filter((product) => {
+  const filteredProducts = productsList.filter((product) => {
     // 1. Filter by search query (match title, category or description)
     const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
+                          (product.description || '').toLowerCase().includes(searchQuery.toLowerCase());
                           
     // 2. Filter by category tab
     const matchesCategory = (activeFilter === 'My Favourites' && user)
-      ? favorites.includes(product.id)
+      ? isFavourite(product._id || product.id)
       : (activeFilter === 'Popular Categories' || product.category === activeFilter);
 
     return matchesSearch && matchesCategory;
@@ -136,15 +196,15 @@ export default function Home() {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.15,
-        delayChildren: 0.2
-      }
-    }
+        staggerChildren: 0.08,
+        delayChildren: 0.1,
+      },
+    },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+    hidden: { opacity: 0, y: 12 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
   };
 
   return (
@@ -159,253 +219,26 @@ export default function Home() {
             initial={{ opacity: 0, scale: 1.05 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 1.5, ease: 'easeInOut' }}
+            transition={{ duration: 0.8, ease: 'easeInOut' }}
             className="carousel-slide-img"
           />
         </AnimatePresence>
         <div className="carousel-overlay" />
       </div>
 
-      {/* Navigation Header */}
-      <header className="header-container">
-        <Link to="/" className="logo-link">
-          <motion.div 
-            className="logo-img-wrapper"
-            whileHover={{ rotate: 15, scale: 1.05 }}
-          >
-            <img src="/logo.svg" alt="Ali Logo" className="logo-img" />
-          </motion.div>
-          <h1 className="logo-title">
-            Ali <span>STUDIO</span>
-          </h1>
-        </Link>
-
-        <div className="header-center-group">
-          {/* Pages menu button */}
-          <div className="nav-pages-wrapper">
-            <button
-              type="button"
-              className="nav-pages-btn glass"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsNavPagesOpen(!isNavPagesOpen);
-              }}
-              aria-label="Open pages menu"
-              title="Pages"
-            >
-              <StickyNote size={16} />
-              <span className="nav-pages-btn-text">Studio Atlas</span>
-            </button>
-            <AnimatePresence>
-              {isNavPagesOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  className="nav-pages-dropdown glass"
-                >
-                  {navPages.map((page) => (
-                    <Link
-                      key={page.name}
-                      to={page.path}
-                      className="nav-pages-link"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsNavPagesOpen(false);
-                        setIsMobileMenuOpen(false);
-                        navigate(page.path);
-                      }}
-                    >
-                      {page.name}
-                    </Link>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Animated Search Bar */}
-          <motion.div
-            className={`nav-search-bar ${isSearchFocused || searchQuery ? 'expanded' : ''}`}
-          >
-            <div className="nav-search-inner glass">
-              <Search size={18} className="nav-search-icon" />
-              <input
-                type="text"
-                placeholder="Search furniture..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  if (e.target.value) {
-                    document.getElementById('furn-collection')?.scrollIntoView({ behavior: 'smooth' });
-                  }
-                }}
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setIsSearchFocused(false)}
-                className="nav-search-input"
-              />
-              <AnimatePresence>
-                {searchQuery && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    onClick={() => setSearchQuery('')}
-                    className="nav-search-clear"
-                    type="button"
-                  >
-                    <X size={14} />
-                  </motion.button>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Action Controls: Favourites, Cart, Sign In/Register or User welcome menu state */}
-        <div className="header-actions">
-          {user && (
-            <Link to="/cart" className="icon-btn-mode cart-icon-link" style={{ position: 'relative' }}>
-              <ShoppingCart size={18} />
-              {cart.length > 0 && (
-                <span className="cart-badge-count">{cart.reduce((acc, item) => acc + item.quantity, 0)}</span>
-              )}
-            </Link>
-          )}
-
-          <button onClick={toggleTheme} className="icon-btn-mode">
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-
-          {user && (
-            <button
-              onClick={() => {
-                setActiveFilter('My Favourites');
-                document.getElementById('furn-collection')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="icon-btn-mode nav-fav-icon-btn"
-              title={`Favourites (${favorites.length})`}
-            >
-              <Heart size={16} fill="var(--accent-gold)" color="var(--accent-gold)" />
-              {favorites.length > 0 && <span className="fav-mini-count">{favorites.length}</span>}
-            </button>
-          )}
-
-          {user ? (
-            <div className="user-menu-wrapper user-menu-compact">
-              {user.role === 'Admin' && (
-                <Link to="/dashboard" className="btn-futuristic btn-compact-nav">
-                  Dashboard
-                </Link>
-              )}
-              <button onClick={logout} className="icon-btn-mode" title="Logout">
-                <LogOut size={16} />
-              </button>
-            </div>
-          ) : (
-            <div className="header-auth-desktop">
-              <Link to="/login" className="btn-outline header-auth-btn">
-                Sign In
-              </Link>
-              <Link to="/register" className="btn-gold header-auth-btn">
-                Register
-              </Link>
-            </div>
-          )}
-
-          {/* Hamburger Menu Toggle (Mobile) */}
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="mobile-menu-toggle-btn">
-            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
-      </header>
-
-      {/* Mobile menu dropdown */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="mobile-nav-dropdown glass"
-          >
-            <div className="nav-search-inner glass" style={{ width: '100%' }}>
-              <Search size={18} className="nav-search-icon" />
-              <input
-                type="text"
-                placeholder="Search furniture..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  if (e.target.value) {
-                    setIsMobileMenuOpen(false);
-                    document.getElementById('furn-collection')?.scrollIntoView({ behavior: 'smooth' });
-                  }
-                }}
-                className="nav-search-input"
-              />
-            </div>
-            <div className="mobile-nav-pages-grid">
-              {navPages.map((page) => (
-                <Link
-                  key={page.name}
-                  to={page.path}
-                  className="mobile-nav-link"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsMobileMenuOpen(false);
-                    navigate(page.path);
-                  }}
-                >
-                  {page.name}
-                </Link>
-              ))}
-            </div>
-            {user ? (
-              <div className="mobile-nav-auth-row">
-                {user.role === 'Admin' && (
-                  <Link
-                    to="/dashboard"
-                    className="btn-futuristic mobile-auth-btn"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
-                )}
-                <button
-                  type="button"
-                  className="btn-outline mobile-auth-btn"
-                  onClick={() => {
-                    logout();
-                    setIsMobileMenuOpen(false);
-                  }}
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <div className="mobile-nav-auth-row">
-                <Link
-                  to="/login"
-                  className="btn-outline mobile-auth-btn"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/register"
-                  className="btn-gold mobile-auth-btn"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Register
-                </Link>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <SiteNavbar
+        variant="overlay"
+        searchQuery={searchQuery}
+        onSearchChange={(value) => {
+          setSearchQuery(value);
+          if (value) {
+            document.getElementById('furn-collection')?.scrollIntoView({ behavior: 'smooth' });
+          }
+        }}
+        onSearchSubmit={() => {
+          document.getElementById('furn-collection')?.scrollIntoView({ behavior: 'smooth' });
+        }}
+      />
 
       {/* Main Content Area */}
       <main className="main-content">
@@ -482,10 +315,10 @@ export default function Home() {
       <section className="mega-deals-section glass">
         <div className="deals-banner-content">
           <div className="deals-text-panel">
-            <span className="deals-fest-tag">6.6 MID YEAR FESTIVAL</span>
-            <h2 className="deals-main-title font-serif">MEGA DEALS</h2>
-            <p className="deals-discount-text">UP TO <span>80% OFF</span> ON PREMIUM LUXURY FURNITURE</p>
-            <span className="deals-dates-lbl">5 JUNE (8PM) - 10 JUNE</span>
+            <span className="deals-fest-tag">{megaDeals.festTag}</span>
+            <h2 className="deals-main-title font-serif">{megaDeals.title}</h2>
+            <p className="deals-discount-text">{megaDeals.discountText}</p>
+            <span className="deals-dates-lbl">{megaDeals.datesLabel}</span>
             <div style={{ marginTop: '20px' }}>
               <a href="#furn-collection" className="btn-gold">Shop Now</a>
             </div>
@@ -577,22 +410,35 @@ export default function Home() {
         <div className="furniture-grid furniture-grid-compact">
           {filteredProducts.map((product) => (
             <div
-              key={product.id}
+              key={product._id || product.id}
               className="furniture-card furniture-card-compact"
-              onClick={() => navigate(`/product/${product.id}`)}
+              onClick={() => {
+                const pid = product._id || product.id;
+                if (pid) navigate(`/product/${pid}`);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const pid = product._id || product.id;
+                  if (pid) navigate(`/product/${pid}`);
+                }
+              }}
+              role="link"
+              tabIndex={0}
               style={{ cursor: 'pointer' }}
             >
               <div className="furniture-img-wrapper furniture-img-compact">
-                <img src={product.image} alt={product.title} className="furniture-img" />
+                <img src={product.image} alt={product.title} className="furniture-img" loading="lazy" decoding="async" />
                 <div className="furniture-hover-actions furniture-hover-compact">
-                  <button
-                    onClick={(e) => toggleFavorite(e, product.id)}
-                    className="action-btn-circle action-btn-sm"
-                    style={{ color: favorites.includes(product.id) ? 'var(--accent-gold)' : '#171717' }}
-                    title="Add to Favorite"
-                  >
-                    <Heart size={14} fill={favorites.includes(product.id) ? 'var(--accent-gold)' : 'none'} />
-                  </button>
+                  {user && (
+                    <button
+                      onClick={(e) => toggleFavorite(e, product)}
+                      className="action-btn-circle action-btn-sm"
+                      style={{ color: isFavourite(product._id || product.id) ? 'var(--accent-gold)' : '#171717' }}
+                      title="Add to Favorite"
+                    >
+                      <Heart size={14} fill={isFavourite(product._id || product.id) ? 'var(--accent-gold)' : 'none'} />
+                    </button>
+                  )}
                   <button
                     onClick={(e) => {
                       e.preventDefault();
@@ -610,7 +456,7 @@ export default function Home() {
               <div className="furniture-info furniture-info-compact">
                 <span className="furn-category">{product.category}</span>
                 <h4 className="furn-title furn-title-compact">{product.title}</h4>
-                <span className="furn-price furn-price-compact">{product.price}</span>
+                <span className="furn-price furn-price-compact">${product.price}</span>
               </div>
             </div>
           ))}
@@ -632,8 +478,8 @@ export default function Home() {
             <div className="footer-link-col">
               <h4 className="footer-col-header">Popular Items</h4>
               <ul className="footer-link-list footer-cat-grid">
-                {furnitureProducts.slice(0, 8).map((p) => (
-                  <li key={p.id}><Link to={`/product/${p.id}`}>{p.title}</Link></li>
+                {productsList.slice(0, 8).map((p) => (
+                  <li key={p._id || p.id}><Link to={`/product/${p._id || p.id}`}>{p.title}</Link></li>
                 ))}
               </ul>
             </div>
@@ -653,7 +499,7 @@ export default function Home() {
 
             <div className="footer-brand-col footer-brand-compact">
               <div className="footer-brand-top">
-                <img src="/logo.svg" alt="Ali Logo" className="footer-bottom-logo" />
+                <Logo size={36} variant="gold" className="footer-bottom-logo" />
                 <h3 className="footer-logo-title footer-logo-sm">Ali <span>STUDIO</span></h3>
               </div>
               <div className="footer-feedback-box footer-feedback-compact">
@@ -671,6 +517,7 @@ export default function Home() {
           </div>
 
           <div className="footer-divider-line" />
+          <SiteFooter compact />
           <div className="footer-bottom-row footer-bottom-compact">
             <span className="footer-copyright-text">&copy; {new Date().getFullYear()} Ali Studio</span>
             <div className="footer-social-circles">

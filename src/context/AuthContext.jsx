@@ -188,15 +188,8 @@ export function AuthProvider({ children }) {
         'Content-Type': 'application/json',
         ...getAuthHeaders(token),
       };
-      const body = JSON.stringify({ userId: id, urole });
-
-      let res = await fetch('/api/user/update-role', { method: 'PUT', headers, body });
-      if (res.status === 404) {
-        res = await fetch('/api/user/update-role', { method: 'POST', headers, body });
-      }
-      if (res.status === 404) {
-        res = await fetch(`/api/user/${id}/role`, { method: 'PUT', headers, body: JSON.stringify({ urole }) });
-      }
+      const body = JSON.stringify({ urole });
+      let res = await fetch(`/api/user/role/${id}`, { method: 'PUT', headers, body });
 
       const contentType = res.headers.get('content-type') || '';
       if (!contentType.includes('application/json')) {

@@ -22,6 +22,7 @@ import Register from './pages/Register';
 import ProductDetails from './pages/ProductDetails';
 import Products from './pages/Products';
 import Cart from './pages/Cart';
+import MyAccount from './pages/MyAccount';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -60,6 +61,7 @@ export default function App() {
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/favourites" element={<Favourites />} />
+            <Route path="/account" element={<MyAccount />} />
 
             <Route path="/about" element={<About />} />
             <Route path="/portfolio" element={<Portfolio />} />

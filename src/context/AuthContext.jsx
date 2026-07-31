@@ -139,6 +139,30 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const updateProfile = async (profileData) => {
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(token),
+        },
+        body: JSON.stringify(profileData),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Profile update failed');
+      }
+      const updatedUser = mapApiUser(data.data);
+      setUser(updatedUser);
+      localStorage.setItem('ali_user', JSON.stringify(updatedUser));
+      return { success: true, user: updatedUser };
+    } catch (error) {
+      console.error('Update Profile Error:', error);
+      return { success: false, message: error.message };
+    }
+  };
+
   const fetchUsers = async () => {
     try {
       const res = await fetch('/api/user/list', {
@@ -317,6 +341,7 @@ export function AuthProvider({ children }) {
         login,
         logout,
         resetPassword,
+        updateProfile,
         fetchUsers,
         deleteUser,
         updateUserRole,

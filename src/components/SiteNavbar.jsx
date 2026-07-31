@@ -176,19 +176,25 @@ export default function SiteNavbar({
 
           {user ? (
             <div className="user-menu-wrapper user-menu-compact">
-              {user.avatar && (
-                <img
-                  src={user.avatar}
-                  alt={user.username || 'Profile'}
-                  style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.15)' }}
-                />
-              )}
+              <Link to="/account" title="My Account" style={{ display: 'flex', alignItems: 'center' }}>
+                {user.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user.username || 'Profile'}
+                    style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer' }}
+                  />
+                ) : (
+                  <div style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.15)', backgroundColor: 'rgba(175, 133, 80, 0.2)', color: 'var(--accent-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
+                    {user.username?.slice(0, 2).toUpperCase() || 'U'}
+                  </div>
+                )}
+              </Link>
               {user.role === 'Admin' && (
                 <Link to="/dashboard" className="btn-futuristic btn-compact-nav">
                   Dashboard
                 </Link>
               )}
-              <button onClick={logout} className="icon-btn-mode" title="Logout" type="button">
+              <button onClick={logout} className="icon-btn-mode nav-logout-desktop" title="Logout" type="button">
                 <LogOut size={16} />
               </button>
             </div>
@@ -262,6 +268,13 @@ export default function SiteNavbar({
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Favourites
+                </Link>
+                <Link
+                  to="/account"
+                  className="btn-outline mobile-auth-btn"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  My Account
                 </Link>
                 {user.role === 'Admin' && (
                   <Link

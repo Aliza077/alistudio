@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import SiteNavbar from '../components/SiteNavbar';
-import SiteFooter from '../components/SiteFooter';
+import StudioPageLayout from '../components/StudioPageLayout';
 import {
   Trash2, ShoppingBag, Plus, Minus,
   MapPin, ShieldCheck, Navigation, Search, ExternalLink, X,
@@ -280,8 +279,7 @@ export default function Cart() {
   };
 
   return (
-    <div className="cart-page-root">
-      <SiteNavbar variant="overlay" />
+    <StudioPageLayout maxWidth="1100px">
 
       {checkoutSuccess ? (
         <div className="checkout-success-panel glass" style={{ textAlign: 'center', padding: '60px 24px', margin: '40px auto', maxWidth: '600px', borderRadius: '24px' }}>
@@ -589,7 +587,6 @@ export default function Cart() {
         </div>
       )}
 
-      <SiteFooter compact />
-    </div>
+    </StudioPageLayout>
   );
 }

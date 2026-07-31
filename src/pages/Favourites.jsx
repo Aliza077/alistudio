@@ -50,28 +50,53 @@ export default function Favourites() {
             {favourites.map((product) => {
               const pId = product._id || product.id;
               return (
-                <div key={pId} className="furn-card glass">
-                  <Link to={`/product/${pId}`} className="furn-card-img-link">
-                    <img src={product.image} alt={product.title} className="furn-card-img" loading="lazy" />
-                  </Link>
-                  <div className="furn-card-body">
+                <div key={pId} className="furniture-card furniture-card-compact">
+                  <div className="furniture-img-wrapper furniture-img-compact">
+                    <Link to={`/product/${pId}`} style={{ display: 'block', width: '100%', height: '100%' }}>
+                      <img src={product.image} alt={product.title} className="furniture-img" loading="lazy" />
+                    </Link>
+                    <div className="furniture-hover-actions furniture-hover-compact">
+                      <button
+                        type="button"
+                        className="action-btn-circle action-btn-sm"
+                        style={{ color: 'var(--accent-gold)' }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          removeFromFavourites(pId);
+                        }}
+                        title="Remove from Favourites"
+                      >
+                        <Heart size={14} fill="var(--accent-gold)" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="furniture-info furniture-info-compact">
                     <span className="furn-category">{product.category}</span>
-                    <h4 className="furn-title furn-title-compact">{product.title}</h4>
+                    <h4 className="furn-title furn-title-compact" style={{ margin: '4px 0 8px' }}>{product.title}</h4>
                     <span className="furn-price furn-price-compact">${product.price}</span>
                     <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                       <button
                         type="button"
                         className="btn-gold"
-                        style={{ flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px' }}
-                        onClick={() => addToCart(product)}
+                        style={{ flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          addToCart(product);
+                        }}
                       >
-                        <ShoppingCart size={12} /> Add
+                        <ShoppingCart size={12} /> Add to Cart
                       </button>
                       <button
                         type="button"
                         className="btn-outline"
-                        style={{ padding: '8px 10px', borderRadius: '8px' }}
-                        onClick={() => removeFromFavourites(pId)}
+                        style={{ padding: '8px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          removeFromFavourites(pId);
+                        }}
                         aria-label="Remove favourite"
                       >
                         <Trash2 size={14} />
